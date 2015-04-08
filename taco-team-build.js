@@ -143,19 +143,17 @@ function createIpa(args) {
             if (matches.length != 1) {
                 throw "Expected only one .app - found " + matches.length;
             } else {
-                promise = promise.then(function () {
-                    var cmdString = "xcrun -v -sdk iphoneos PackageApplication \"" + matches[0] + "\" -o \"" +
-                        path.join(path.dirname(matches[0]), path.basename(matches[0], ".app")) + ".ipa\" ";
-                    
-                    // Add additional command line args passed 
-                    var callArgs = getCallArgs(platform, args);
-                    callArgs.options.forEach(function (arg) {
-                        cmdString += " " + arg;
-                    });
-
-                    console.log("Exec: " + cmdString);
-                    return exec(cmdString).then(handleExecReturn);
+                var cmdString = "xcrun -sdk iphoneos PackageApplication \"" + matches[0] + "\" -o \"" +
+                    path.join(path.dirname(matches[0]), path.basename(matches[0], ".app")) + ".ipa\" ";
+                
+                // Add additional command line args passed 
+                var callArgs = getCallArgs("ios", args);
+                callArgs.options.forEach(function (arg) {
+                    cmdString += " " + arg;
                 });
+
+                console.log("Exec: " + cmdString);
+                return exec(cmdString).then(handleExecReturn);
             }
         }
     });
