@@ -8,7 +8,7 @@ taco-team-build is a sample node module designed to avoid common pitfalls when b
 
 Specifically it helps with the following challenges:
 
-1.  Handling multiple versions of the Cordova CLI from the same build server in a performant way
+1.  Handling multiple versions of the Cordova CLI from the same build server in a performant way on Windows
 2.  Automated detection of whether a platform should be added avoid a non-zero exit code for incremental builds (the default CLI behavior)
 3.  Generating an ipa for iOS
 4.  Supporting Visual Studio 2015's res/native and Task Runner Explorer features (via [a plugin](http://aka.ms/vstacoplugin))

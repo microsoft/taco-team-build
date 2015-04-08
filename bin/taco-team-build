@@ -9,8 +9,8 @@ var cordovaBuild = require('../taco-team-build.js');
     buildArgs = process.argv.slice(3);
 
 cordovaBuild.buildProject(cordovaPlatform, buildArgs)
-	.then(function() { return cordovaBuild.packageProject(cordovaPlatform); })
-	.fail(function (err) {
-		console.error(err);
-		process.exit(1);
-	}).done();
+    .then(function() { return cordovaBuild.packageProject(cordovaPlatform); })
+    .fail(function (err) {
+        console.error(err);
+        process.exit(1);
+    }).done();

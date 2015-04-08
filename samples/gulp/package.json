@@ -1,7 +1,7 @@
 {
   "devDependencies": {
-	"gulp": "latest",
-	"gulp-typescript": "latest",
-	"taco-team-build": "http://aka.ms/tacoteambuild-rel"
+    "gulp": "latest",
+    "gulp-typescript": "latest",
+    "taco-team-build": "http://aka.ms/tacoteambuild-rel"
   }
 }
