@@ -45,7 +45,7 @@ build.configure({
     cordovaCache: "D:\\path\\to\\cache",
     cordovaVersion: "4.3.0",
     projectPath: "myproject"
-});
+}).done();
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 -   **cordovaCache** defaults to either the **CORDOVA\_CACHE** environment variable or \_cordova relative to the project if no value is set for the variable. This will also automatically set CORDOVA\_HOME to this same location to avoid conflicting with any global instllations you may have.
@@ -67,17 +67,17 @@ The method returns a promise that is fulfilled with the appropriate cordova-lib 
 Ex:
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-var build = require('taco-team-build');
-build.setupCordova().then(function(cordova){
+var build = require("taco-team-build");
+build.setupCordova().then(function(cordova) {
 	return cordova.raw.plugin("add","org.apache.cordova.camera");
-});
+}).done();
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-var build = require('taco-team-build');
-build.setupCordova().then(function(cordova){
+var build = require("taco-team-build");
+build.setupCordova().then(function(cordova) {
 	return cordova.raw.run({platforms:["android"], options:["--nobuild"]});
-});
+}).done();
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 These functions return a promise that is fulfilled when the operation has completed.
@@ -92,9 +92,7 @@ var build = require('taco-team-build'),
     platforms = ["android", "windows"],
     args = { android: ["--release", "--ant"], windows: ["--release"] };
             
-build.setupCordova()
-	.then(function(){ return build.buildProject(platforms, args); })
-	.done();
+build.buildProject(platforms, args).done();
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 **WARNING**: Unlike the Cordova CLI, you should not use the "double-double dash" when referencing platform specific argumetns. Ex: Use "--ant" not "-- --ant" for Android.
@@ -110,9 +108,9 @@ Runs any post-build packaging steps required for the specified platforms. The me
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 var build = require('taco-team-build');
-build.setupCordova()
-    .then(function(){ return build.buildProject("ios",["--device"])); })
-    .then(function(){ return build.packageProject("ios"); })
+
+build.buildProject("ios",["--device"])); })
+    .then(function() { return build.packageProject("ios"); })
     .done();
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
