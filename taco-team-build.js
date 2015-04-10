@@ -7,9 +7,10 @@ var DEFAULT_CORDOVA_VERSION = "4.3.0",
     // Support plugin adds in two VS features: Task Runner Explorer event bindings and res/native 
     SUPPORT_PLUGIN = "https://github.com/Chuxel/taco-cordova-support-plugin.git",
     SUPPORT_PLUGIN_ID = "com.microsoft.visualstudio.taco",
-    // cordova-lib is technically what we want to use g cordova.raw gives us. We are using 
-    // the "cordova" package to get to it since version numbers do not match the CLI < v3.7.0.  
-    // Ex: 3.6.3-0.2.13 does not match cordova-lib's version
+    // cordova-lib is technically what we want to given that is what cordova.raw gives us. We are 
+    // using the "cordova" package to get to it since version numbers do not match the CLI < v3.7.0.  
+    // Ex: 3.6.3-0.2.13 does not match cordova-lib's version. If you only need >= v3.7.0, update this
+    // to cordova-lib.
     CORDOVA_LIB = "cordova";
 
 // Module dependencies
