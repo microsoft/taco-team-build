@@ -45,7 +45,7 @@ build.configure({
     cordovaCache: "D:\\path\\to\\cache",
     cordovaVersion: "4.3.0",
     projectPath: "myproject"
-});
+}).done();
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 -   **cordovaCache** defaults to either the **CORDOVA\_CACHE** environment variable or \_cordova relative to the project if no value is set for the variable. This will also automatically set CORDOVA\_HOME to this same location to avoid conflicting with any global instllations you may have.
@@ -67,17 +67,17 @@ The method returns a promise that is fulfilled with the appropriate cordova-lib 
 Ex:
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-var build = require('taco-team-build');
+var build = require("taco-team-build");
 build.setupCordova().then(function(cordova) {
-	cordova.raw.plugin("add","org.apache.cordova.camera");
-});
+	return cordova.raw.plugin("add","org.apache.cordova.camera");
+}).done();
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-var build = require('taco-team-build');
+var build = require("taco-team-build");
 build.setupCordova().then(function(cordova) {
-	cordova.raw.run({platforms:["android"], options:["--nobuild"]});
-});
+	return cordova.raw.run({platforms:["android"], options:["--nobuild"]});
+}).done();
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 These functions return a promise that is fulfilled when the operation has completed.
@@ -108,8 +108,9 @@ Runs any post-build packaging steps required for the specified platforms. The me
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 var build = require('taco-team-build');
-build.buildProject("ios",["--device"])); } )
-    .then(function(){ return build.packageProject("ios"); })
+
+build.buildProject("ios",["--device"])); })
+    .then(function() { return build.packageProject("ios"); })
     .done();
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -118,7 +119,6 @@ iOS Arguments:
 - **--embed**: Specifies the location of an alternate provisioning profile
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-var build = require('taco-team-build');
 build.packageProject("ios", ["--sign=/path/to/signing.p12" ", "--embed=/path/to/some.mobileprovision"]); 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

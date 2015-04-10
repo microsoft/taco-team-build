@@ -126,7 +126,7 @@ function packageProject(cordovaPlatforms, args) {
         var promise = Q(cordova);
         cordovaPlatforms.forEach(function (platform) {
             if (platform == "ios") {
-                promise = promise.then(function() { return createIpa(args); })
+                promise = promise.then(function() { return createIpa(args); });
             } else {
                 console.log("Platform " + platform + " does not require a separate package step.");
             }
@@ -170,10 +170,10 @@ function getCordova() {
         cdv = require(path.join(cordovaCache, cordovaVersion, "node_modules", CORDOVA_LIB));
         // Install VS support plugin if not already present
         if(!fs.existsSync(path.join(projectPath, "plugins", SUPPORT_PLUGIN_ID))) {
-            console.log("Adding support plugin.")
+            console.log("Adding support plugin.");
             return cdv.raw.plugin("add", SUPPORT_PLUGIN).then(function() { return cdv; });
         } else {
-            console.log("Support plugin already added.")
+            console.log("Support plugin already added.");
         }
     }
     return Q(cdv);
@@ -189,9 +189,9 @@ function getCallArgs(platforms, args) {
     // If only one platform is specified, check if the args is an object and use the args for this platform if so
     if (platforms.length == 1) {
         if (args instanceof Array) {
-            return { platforms: platforms, options: args }
+            return { platforms: platforms, options: args };
         } else {
-            return { platforms: platforms, options: args[platforms[0]] }
+            return { platforms: platforms, options: args[platforms[0]] };
         }
     }
 }
@@ -200,22 +200,8 @@ function getCallArgs(platforms, args) {
 function handleExecReturn(result) {
     console.log("Exec complete.");
     console.log(result[0]);
-    if (result[1] != "") {
+    if (result[1] !== "") {
         console.error(result[1]);
-    }
-}
-
-// Recusive copy function for res/native processing
-function copyFiles(srcPath, destPath) {
-    if (fs.statSync(srcPath).isDirectory()) {
-        if (!fs.existsSync(destPath)) {
-            fs.mkdirSync(destPath);
-        }
-        fs.readdirSync(srcPath).forEach(function (child) {
-            copyFiles(path.join(srcPath, child), path.join(destPath, child));
-        });
-    } else {
-        fs.writeFileSync(destPath, fs.readFileSync(srcPath));
     }
 }
 
@@ -225,5 +211,5 @@ module.exports = {
     setupCordova: setupCordova,
     buildProject: buildProject,
     packageProject: packageProject
-}
+};
 
