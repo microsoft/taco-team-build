@@ -25,7 +25,7 @@ module.exports = function(grunt) {
 
     grunt.registerTask('default', ['typescript','build']);
 
-    grunt.registerTask('build', function (platformsToBuild, buildArgs) {
+    grunt.registerTask('build', function () {
         var cordovaBuild = require('taco-team-build'),
             done = this.async();
 
@@ -35,7 +35,7 @@ module.exports = function(grunt) {
                 ios: ["--release", "--device"],     // specific preferences like "-- --ant" for Android
                 windows: ["--release"],             // or "-- --win" for Windows. You may also encounter a
                 wp8: ["--release"]                  // "TypeError" after adding a flag Android doesn't recognize
-            }                                       // when using Cordova < 4.3.0. This is fixed in 4.3.0.
+            };                                      // when using Cordova < 4.3.0. This is fixed in 4.3.0.
 
         cordovaBuild.buildProject(platformsToBuild, buildArgs)
             .then(function() {
@@ -43,5 +43,5 @@ module.exports = function(grunt) {
             })
             .done(done);
     });
-}
+};
 
