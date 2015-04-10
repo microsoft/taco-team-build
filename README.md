@@ -68,15 +68,15 @@ Ex:
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 var build = require('taco-team-build');
-build.setupCordova().then(function(cordova) {
-	cordova.raw.plugin("add","org.apache.cordova.camera");
+build.setupCordova().then(function(cordova){
+	return cordova.raw.plugin("add","org.apache.cordova.camera");
 });
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 var build = require('taco-team-build');
-build.setupCordova().then(function(cordova) {
-	cordova.raw.run({platforms:["android"], options:["--nobuild"]});
+build.setupCordova().then(function(cordova){
+	return cordova.raw.run({platforms:["android"], options:["--nobuild"]});
 });
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -92,7 +92,9 @@ var build = require('taco-team-build'),
     platforms = ["android", "windows"],
     args = { android: ["--release", "--ant"], windows: ["--release"] };
             
-build.buildProject(platforms, args).done();
+build.setupCordova()
+	.then(function(){ return build.buildProject(platforms, args); })
+	.done();
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 **WARNING**: Unlike the Cordova CLI, you should not use the "double-double dash" when referencing platform specific argumetns. Ex: Use "--ant" not "-- --ant" for Android.
@@ -108,7 +110,8 @@ Runs any post-build packaging steps required for the specified platforms. The me
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 var build = require('taco-team-build');
-build.buildProject("ios",["--device"])); } )
+build.setupCordova()
+    .then(function(){ return build.buildProject("ios",["--device"])); })
     .then(function(){ return build.packageProject("ios"); })
     .done();
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -118,7 +121,6 @@ iOS Arguments:
 - **--embed**: Specifies the location of an alternate provisioning profile
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-var build = require('taco-team-build');
 build.packageProject("ios", ["--sign=/path/to/signing.p12" ", "--embed=/path/to/some.mobileprovision"]); 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
