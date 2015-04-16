@@ -7,11 +7,11 @@ var DEFAULT_CORDOVA_VERSION = "4.3.0",
     // Support plugin adds in two VS features: Task Runner Explorer event bindings and res/native 
     SUPPORT_PLUGIN = "https://github.com/Chuxel/taco-cordova-support-plugin.git",
     SUPPORT_PLUGIN_ID = "com.microsoft.visualstudio.taco",
-    // cordova-lib is technically what we want to given that is what cordova.raw gives us. We are 
-    // using the "cordova" package to get to it since version numbers do not match the CLI < v3.7.0.  
-    // Ex: 3.6.3-0.2.13 does not match cordova-lib's version. If you only need >= v3.7.0, update this
-    // to cordova-lib.
-    CORDOVA_LIB = "cordova";
+    // cordova-lib is technically what we want to given that is what cordova gives us when you "requre"
+    // the node the "cordova" node module. However, the "cordova" and "cordova-lib" package version 
+    // numbers do not match in CLI < v3.7.0. Ex: 3.6.3-0.2.13 does not match cordova-lib's version. 
+    // If you need < v3.7.0, update this constant to "cordova".
+    CORDOVA_LIB = "cordova-lib";
 
 // Module dependencies
 var fs = require('fs'),
@@ -94,7 +94,7 @@ function buildProject(cordovaPlatforms, args) {
             promise = promise.then(function () {
                 // Build app with platform specific args if specified
                 var callArgs = getCallArgs(platform, args);
-                console.log("Queueing build for platform " + callArgs.platform + " w/options: " + callArgs.options || "none");
+                console.log("Queueing build for platform " + platform + " w/options: " + callArgs.options || "none");
                 return cordova.raw.build(callArgs);
             });
         });
@@ -168,6 +168,9 @@ function getCordova() {
         process.chdir(projectPath);
         process.env["CORDOVA_HOME"] = cordovaCache; // Set platforms to cache in cache locaiton to avoid unexpected results
         cdv = require(path.join(cordovaCache, cordovaVersion, "node_modules", CORDOVA_LIB));
+        if(cdv.cordova) {
+            cdv = cdv.cordova;
+        }
         // Install VS support plugin if not already present
         if(!fs.existsSync(path.join(projectPath, "plugins", SUPPORT_PLUGIN_ID))) {
             console.log("Adding support plugin.");

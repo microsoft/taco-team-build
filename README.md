@@ -11,7 +11,7 @@ Specifically it helps with the following challenges:
 1.  Handling multiple versions of the Cordova CLI from the same build server in a performant way on Windows
 2.  Automated detection of whether a platform should be added avoid a non-zero exit code for incremental builds (the default CLI behavior)
 3.  Generating an ipa for iOS
-4.  Supporting Visual Studio 2015's res/native and Task Runner Explorer features (via [a plugin](http://aka.ms/vstacoplugin))
+4.  Supporting Visual Studio 2015's res/native, Task Runner Explorer, and Windows packaging features (via [a plugin](http://aka.ms/vstacoplugin))
 
 It is a generic node module so it can be used with any number of build systems including Gulp, Grunt, and Jake.
 
@@ -27,6 +27,12 @@ Sample Usage
 2.  Copy the contents of the “samples/gulp” folder to the root of your project.
 3.  Go to the command line in that folder and type “npm install”
 4.  Type "gulp"
+
+### Grunt Build Sample
+1.  Install Grunt globally if you haven’t (npm install -g grunt).
+2.  Copy the contents of the “samples/grunt” folder to the root of your project.
+3.  Go to the command line in that folder and type “npm install”
+4.  Type "grunt"
 
 ### Command Line Utility Sample
 1.  npm install the taco-team-build package globally (Ex: npm install -g c:\path\to\taco-team-build)
@@ -63,24 +69,27 @@ Downloads and installs the correct version of Cordova in the appropriate cache l
 
 You can also pass in the same **config** object as the configure method to set configuration options before initalization.
 
-The method returns a promise that is fulfilled with the appropriate cordova-lib node module once setup is completed.  Once setup has completed, you can use value from the promise to access a number of Cordova CLI functions in JavaScript.
-Ex:
+The method returns a promise that is fulfilled with the appropriate cordova-lib node module once setup is completed.  Once setup has completed, you can use value from the promise to access a number of Cordova CLI functions in JavaScript. Ex:
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 var build = require("taco-team-build");
-build.setupCordova().then(function(cordova) {
-	return cordova.raw.plugin("add","org.apache.cordova.camera");
-}).done();
+build.setupCordova().done(function(cordova) {
+	cordova.plugin("add","org.apache.cordova.camera", function () {
+		// Continue processing after camera plugin has been added
+    });
+});
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 var build = require("taco-team-build");
-build.setupCordova().then(function(cordova) {
-	return cordova.raw.run({platforms:["android"], options:["--nobuild"]});
-}).done();
+build.setupCordova().done(function(cordova) {
+	cordova.run({platforms:["android"], options:["--nobuild"]}, function() {
+		// Continue processing after run is complete
+    });
+});
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-These functions return a promise that is fulfilled when the operation has completed.
+If you would prefer to use a promise instead of a callback syntax, you can use "cordova.raw" to access that version of the function.
 
 ### buildProject(platforms, args)
 Builds the specified platform(s). Passed in **platforms** can be an array of platforms or a single platform string. Unlike cordova.raw.build, passed in **args** can be an array of arguments or an object with an array of arguments per platform name. The method returns a promise that is fulfilled once the specified platform(s) are built.
