@@ -2,9 +2,9 @@
   Copyright (c) Microsoft. All rights reserved.  
   Licensed under the MIT license. See LICENSE file in the project root for full license information.
 */
-var gulp = require('gulp'),
-    ts = require('gulp-typescript'),
-    cordovaBuild = require('taco-team-build');
+var gulp = require("gulp"),
+    ts = require("gulp-typescript"),
+    cordovaBuild = require("taco-team-build");
 
 var winPlatforms = ["android", "windows", "wp8"],
     osxPlatforms = ["ios"],
@@ -16,7 +16,7 @@ var winPlatforms = ["android", "windows", "wp8"],
     },                                                                              // when using Cordova < 4.3.0. This is fixed in 4.3.0.
     platformsToBuild = process.platform == "darwin" ? osxPlatforms : winPlatforms;  // "Darwin" is the platform name returned for OSX. 
                                                                                     // This could be extended to include Linux as well.
-gulp.task('default', ['package'], function () {
+gulp.task("default", ["package"], function () {
     // Copy results to bin folder
     gulp.src("platforms/android/ant-build/*.apk").pipe(gulp.dest("bin/release/android"));   // Ant build
     gulp.src("platforms/android/build/*.apk").pipe(gulp.dest("bin/release/android"));       // Gradle build
@@ -25,9 +25,9 @@ gulp.task('default', ['package'], function () {
     gulp.src("platforms/ios/build/device/*.ipa").pipe(gulp.dest("bin/release/ios"));
 });
 
-gulp.task('scripts', function () {
+gulp.task("scripts", function () {
     // Compile TypeScript code
-    gulp.src('scripts/**/*.ts')
+    gulp.src("scripts/**/*.ts")
         .pipe(ts({
             noImplicitAny: false,
             noEmitOnError: true,
@@ -39,11 +39,26 @@ gulp.task('scripts', function () {
         .pipe(gulp.dest("www/scripts"));
 });
 
-gulp.task('build', ['scripts'], function () {
+gulp.task("build", ["scripts"], function () {
     return cordovaBuild.buildProject(platformsToBuild, buildArgs);
 });
 
-gulp.task('package', ['build'], function () {
+gulp.task("package", ["build"], function () {
     return cordovaBuild.packageProject(platformsToBuild);
 });
 
+// Example of running the app on an attached device.
+// Type "gulp run-ios" to execute. Note that ios-deploy will need to be installed globally.
+gulp.task("run-ios", ["scripts"], function (callback) {
+    cordovaBuild.setupCordova().done(function (cordova) {
+        cordova.run({ platforms: ["ios"], options: ["--debug", "--device"] }, callback);
+    });
+});
+
+// Example of running app on the iOS simulator
+// Type "gulp sim-ios" to execute. Note that ios-sim will need to be installed globally.
+gulp.task("sim-ios", ["scripts"], function (callback) {
+    cordovaBuild.setupCordova().done(function (cordova) {
+        cordova.emulate({ platforms: ["ios"], options: ["--debug"] }, callback);
+    });
+});
