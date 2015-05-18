@@ -113,7 +113,7 @@ Supported platforms: ios
 
 Runs any post-build packaging steps required for the specified platforms. The method returns a promise that is fulfilled once packaging is completed. Passed in **platforms** can be an array of platforms or a single platform string. Passed in **args** can be an array of arguments or an object with an array of arguments per platform name.
 
-**Note:** The android, windows, and wp8 platforms automatically package on build and you can place the appropriate files for signing under res/native/android or res/native/windows. See [MSDN documentation](https://msdn.microsoft.com/en-us/library/dn757048.aspx) for details.
+**Note:** The android, windows, and wp8 platforms automatically package on build and you can place the appropriate files for signing under res/native/android or res/native/windows. See [MSDN documentation](https://msdn.microsoft.com/en-us/library/dn757048(v=vs.140).aspx) for details.
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 var build = require('taco-team-build');
