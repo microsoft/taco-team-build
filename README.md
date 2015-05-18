@@ -4,7 +4,7 @@ Visual Studio Tools for Apache Cordova (TACo) Team Build Helper Node Module
 
 License: MIT
 
-taco-team-build is a sample node module designed to avoid common pitfalls when building Cordova apps in a Team or Continuous Integration environment. It was put together for a set of tutorials for the [Visual Studio 2015 Tools for Apache Cordova](https://www.visualstudio.com/en-us/cordova-vs.aspx) (TACo) featureset in Visual Studio but can be used with standard cordova projects.
+taco-team-build is a sample node module designed to avoid common pitfalls when building Cordova apps in a Team or Continuous Integration environment. It was put together for a set of tutorials for the [Visual Studio 2015 Tools for Apache Cordova](http://aka.ms/cordova) (TACo) featureset in Visual Studio but can be used with standard cordova projects.
 
 Specifically it helps with the following challenges:
 
