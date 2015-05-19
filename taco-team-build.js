@@ -137,9 +137,10 @@ function packageProject(cordovaPlatforms, args) {
 
 // Find the .app folder and use exec to call xcrun with the appropriate set of args
 function createIpa(args) {
+    var deferred = Q.defer();
     glob(projectPath + "/platforms/ios/build/device/*.app", function (err, matches) {
         if (err) {
-            throw err;
+            deferred.reject(err);
         } else {
             if (matches.length != 1) {
                 throw "Expected only one .app - found " + matches.length;
@@ -154,10 +155,18 @@ function createIpa(args) {
                 });
 
                 console.log("Exec: " + cmdString);
-                return exec(cmdString).then(handleExecReturn);
+                return exec(cmdString)
+                    .then(handleExecReturn)
+                    .fail(function(err) {
+                        deferred.reject(err);
+                    })
+                    .done(function() {
+                        deferred.resolve();
+                    });
             }
         }
     });
+    return deferred.promise;
 }
 
 // Utility method that "requires" the correct version of cordova-lib, adds in the support plugin if not present, sets CORDOVA_HOME 
