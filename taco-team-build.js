@@ -4,7 +4,7 @@
 */
 // Constants
 var DEFAULT_CORDOVA_VERSION = "4.3.0",
-    // Support plugin adds in two VS features: Task Runner Explorer event bindings and res/native 
+    // Support plugin adds in two VS features and two bug fixes: Task Runner Explorer event bindings and res/native 
     SUPPORT_PLUGIN = "https://github.com/Chuxel/taco-cordova-support-plugin.git",
     SUPPORT_PLUGIN_ID = "com.microsoft.visualstudio.taco",
     // cordova-lib is technically what we want to given that is what cordova gives us when you "requre"
@@ -21,7 +21,7 @@ var fs = require('fs'),
     exec = Q.nfbind(require('child_process').exec);
 
 // Global vars
-var cordovaCache = process.env["CORDOVA_CACHE"] || path.resolve("_cordova"),
+var cordovaCache = process.env["CORDOVA_CACHE"] || (process.platform == "darwin" ? path.join(process.env["HOME"],".cordova-cache") : path.join(process.env["APPDATA"], "cordova-cache")),
     projectPath = process.cwd(),
     cordovaVersion,
     loadedCordovaVersion,
@@ -175,7 +175,8 @@ function getCordova() {
     if (cdv === undefined || loadedCordovaVersion != cordovaVersion) {
         loadedCordovaVersion = cordovaVersion;
         process.chdir(projectPath);
-        process.env["CORDOVA_HOME"] = cordovaCache; // Set platforms to cache in cache locaiton to avoid unexpected results
+        process.env["CORDOVA_HOME"] = path.join(cordovaCache,"_cordova"); // Set platforms to cache in cache locaiton to avoid unexpected results
+        process.env["PLUGMAN_HOME"] = path.join(cordovaCache,"_plugman"); // Set plugin cache in cache locaiton to avoid unexpected results
         cdv = require(path.join(cordovaCache, cordovaVersion, "node_modules", CORDOVA_LIB));
         if(cdv.cordova) {
             cdv = cdv.cordova;
