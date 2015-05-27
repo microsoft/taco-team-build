@@ -54,7 +54,7 @@ build.configure({
 }).done();
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
--   **cordovaCache** defaults to either the **CORDOVA\_CACHE** environment variable or \_cordova relative to the project if no value is set for the variable. This will also automatically set CORDOVA\_HOME to this same location to avoid conflicting with any global instllations you may have.
+-   **cordovaCache** defaults to either the **CORDOVA\_CACHE** environment variable or %APPDATA%\cordova-cache on Windows and ~/.cordova-cache on OSX if no value is set for the variable. This will also automatically set CORDOVA\_HOME and PLUGMAN\_HOME to sub-folders in this same location to avoid conflicting with any global instllations you may have.
 -   **projectPath** defaults to the current working directory.
 -   If the **cordovaVersion** is not set, the version will be pulled from **taco.json** if present and otherwise default to 4.3.0.  You can manually create a taco.json file if you are not using Visual Studio by including the following in the file:
 
