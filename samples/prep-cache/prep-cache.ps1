@@ -56,7 +56,6 @@ Write-Host "Original PLUGMAN_HOME: $origPH"
 $env:PLUGMAN_HOME=$env:CORDOVA_CACHE + "\_plugman";
 Write-Host "Target PLUGMAN_HOME: $env:PLUGMAN_HOME"
 
-# Use rmdir since this does not hit "path too long" errors common when deleting node_module folders by full path. (Old tech FTW)
 if(Test-Path -Path $env:CORDOVA_CACHE) {
 	Write-Host "WARNING: Cache folder already exists."
 } else {
@@ -65,6 +64,7 @@ if(Test-Path -Path $env:CORDOVA_CACHE) {
 
 cd $env:CORDOVA_CACHE
 
+# Use rmdir since this does not hit "path too long" errors common when deleting node_module folders by full path. (Old tech FTW)
 if(Test-Path -Path "tempProj") {
 	cmd /c "rmdir /S /Q tempProj"
 }
