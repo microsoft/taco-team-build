@@ -22,9 +22,14 @@
 
 $versions = "4.3.0", "5.0.0", "5.1.0";
 $platforms = "android", "windows", "wp8";
-$plugins = "https://github.com/Chuxel/taco-cordova-support-plugin.git", "cordova-plugin-whitelist";
+$plugins = @{	
+			"com.microsoft.visualstudio.taco" = "https://github.com/Chuxel/taco-cordova-support-plugin.git"; 
+			"cordova-plugin-whitelist" = "cordova-plugin-whitelist", "cordova-plugin-whitelist@1.0.0";
+};
 $plugnFetchCordovaVersion = "5.0.0";
-$oneOffPlatforms = "android@3.7.2", "android@4.0.2";
+$oneOffPlatforms = @{
+	"android" = "android@3.7.2", "android@4.0.2"; 
+};
 $platformFetchCordovaVersion = "5.0.0";
 
 $pwd = $(get-location)
@@ -45,8 +50,16 @@ if(!$env:GRADLE_USER_HOME) {
 
 Write-Host "Cordova CLI versions to cache: $versions"
 Write-Host "Cordova pinned platforms to cache: $platforms"
-Write-Host "Cordova un-pinned platforms to cache: $oneOffPlatforms"
-Write-Host "Cordova plugins cache: $plugins"
+Write-Host "Cordova un-pinned platforms to cache:"
+foreach($key in $oneOffPlatforms.Keys) {
+	$value = $oneOffPlatforms.Item($key)
+	Write-Host "   $key - $value"
+}
+Write-Host "Cordova plugins to cache:"
+foreach($key in $plugins.Keys) {
+	$value = $plugins.Item($key)
+	Write-Host "   $key - $value"
+}
 Write-Host "CORDOVA_CACHE: $env:CORDOVA_CACHE"
 Write-Host "GRADLE_USER_HOME: $env:GRADLE_USER_HOME"
 
@@ -68,6 +81,8 @@ if(Test-Path -Path $env:CORDOVA_CACHE) {
 
 cd $env:CORDOVA_CACHE
 
+echo "" > $pwd\stdout.txt
+
 # Use rmdir since this does not hit "path too long" errors common when deleting node_module folders by full path. (Old tech FTW)
 if(Test-Path -Path "tempProj") {
 	cmd /c "rmdir /S /Q tempProj"
@@ -82,22 +97,23 @@ foreach($version in $versions) {
 	Write-Host "Path to install cordova-lib / Cordova CLI: $fullpath"
 	cd $version
 	# Grabbing both cordova-lib and cordova so developers can use Cordova either as a node module or a CLI
-	npm install cordova-lib@$version
-	npm install cordova@$version
+	npm install cordova-lib@$version 1>> $pwd\stdout.txt
+	npm install cordova@$version 1>> $pwd\stdout.txt
 	cd ..
 
 	# Cache pinned platform version as approprate for this CLI version	
-	cmd /c "$fullpath\node_modules\.bin\cordova" create tempProj
+	Write-Host "Prepping project to cache pinned platform versions for Cordova $version"
+	cmd /c "$fullpath\node_modules\.bin\cordova" create tempProj 1>> $pwd\stdout.txt
 	cd tempProj
 	foreach($platform in $platforms) {
-		Write-Host "Caching pinned version of platform $platform"
-		cmd /c "$fullpath\node_modules\.bin\cordova" platform add $platform
+		Write-Host "Caching pinned version of platform $platform in Cordova $version"
+		cmd /c "$fullpath\node_modules\.bin\cordova" platform add $platform 1>> $pwd\stdout.txt
 		if($platform -eq "android") {
 				# We also need to build to ensure GRADLE_USER_HOME are prepped for Android
-				Write-Host "Building to force depenedency acquistion for $platform"
-				cmd /c "$fullpath\node_modules\.bin\cordova" build $platform		
+				Write-Host "Building to force depenedency acquistion for $platform in Cordova $version"
+				cmd /c "$fullpath\node_modules\.bin\cordova" build $platform 1>> $pwd\stdout.txt
 		}
-		cmd /c "$fullpath\node_modules\.bin\cordova" platform remove $platform
+		cmd /c "$fullpath\node_modules\.bin\cordova" platform remove $platform 1>> $pwd\stdout.txt
 	}
 	cd ..
 	# Use rmdir since this does not hit "path too long" errors common when deleting node_module folders by full path. (Old tech FTW)
@@ -105,33 +121,39 @@ foreach($version in $versions) {
 }
 
 # Cache plugins
-cmd /c "$env:CORDOVA_CACHE\$plugnFetchCordovaVersion\node_modules\.bin\cordova" create tempProj
+Write-Host "Prepping project to cache dynamically acquired plugins"
+cmd /c "$env:CORDOVA_CACHE\$plugnFetchCordovaVersion\node_modules\.bin\cordova" create tempProj 1>> $pwd\stdout.txt
 cd tempProj
 # Remove the whitelist plugin so it doesn't conflict if we're installing multiple versions of it to cache
-cmd /c "$env:CORDOVA_CACHE\$platformFetchCordovaVersion\node_modules\.bin\cordova" platform add android
-cmd /c "$env:CORDOVA_CACHE\$platformFetchCordovaVersion\node_modules\.bin\cordova" plugin remove cordova-plugin-whitelist --save
-cmd /c "$env:CORDOVA_CACHE\$platformFetchCordovaVersion\node_modules\.bin\cordova" platform remove android
+cmd /c "$env:CORDOVA_CACHE\$platformFetchCordovaVersion\node_modules\.bin\cordova" platform add android 1>> $pwd\stdout.txt
+cmd /c "$env:CORDOVA_CACHE\$platformFetchCordovaVersion\node_modules\.bin\cordova" plugin remove cordova-plugin-whitelist --save 1>> $pwd\stdout.txt
+cmd /c "$env:CORDOVA_CACHE\$platformFetchCordovaVersion\node_modules\.bin\cordova" platform remove android 1>> $pwd\stdout.txt
 # Now cache plugins
-foreach($plugin in $plugins) {
-	Write-Host "Caching plugin $plugin"
-	cmd /c "$env:CORDOVA_CACHE\$plugnFetchCordovaVersion\node_modules\.bin\cordova" plugin add $plugin
-	cmd /c "$env:CORDOVA_CACHE\$plugnFetchCordovaVersion\node_modules\.bin\cordova" plugin remove $plugin
+foreach($plugin in $plugins.Keys) {
+	foreach($pluginVer in $plugins.Item($plugin)) {
+		Write-Host "Caching plugin $plugin version $pluginVer"
+		cmd /c "$env:CORDOVA_CACHE\$plugnFetchCordovaVersion\node_modules\.bin\cordova" plugin add $pluginVer 1>> $pwd\stdout.txt
+		cmd /c "$env:CORDOVA_CACHE\$plugnFetchCordovaVersion\node_modules\.bin\cordova" plugin remove $plugin 1>> $pwd\stdout.txt
+	}
 }
 cd ..
-cmd /c "rmdir /S /Q tempProj"
+cmd /c "rmdir /S /Q tempProj" 
 
 # Cache one-off (non-pinned) platforms
-cmd /c "$env:CORDOVA_CACHE\$platformFetchCordovaVersion\node_modules\.bin\cordova" create tempProj
+Write-Host "Prepping project to cache specific platform versions"
+cmd /c "$env:CORDOVA_CACHE\$platformFetchCordovaVersion\node_modules\.bin\cordova" create tempProj 1>> $pwd\stdout.txt
 cd tempProj
 # Remove the whitelist plugin since it doesn't work with older versions of platforms and is in the default template for 5.0.0+
-cmd /c "$env:CORDOVA_CACHE\$platformFetchCordovaVersion\node_modules\.bin\cordova" platform add android
-cmd /c "$env:CORDOVA_CACHE\$platformFetchCordovaVersion\node_modules\.bin\cordova" plugin remove cordova-plugin-whitelist --save
-cmd /c "$env:CORDOVA_CACHE\$platformFetchCordovaVersion\node_modules\.bin\cordova" platform remove android
+cmd /c "$env:CORDOVA_CACHE\$platformFetchCordovaVersion\node_modules\.bin\cordova" platform add android 1>> $pwd\stdout.txt
+cmd /c "$env:CORDOVA_CACHE\$platformFetchCordovaVersion\node_modules\.bin\cordova" plugin remove cordova-plugin-whitelist --save 1>> $pwd\stdout.txt
+cmd /c "$env:CORDOVA_CACHE\$platformFetchCordovaVersion\node_modules\.bin\cordova" platform remove android 1>> $pwd\stdout.txt
 # Now cache other platform versions
-foreach($platform in $oneOffPlatforms) {
-	Write-Host "Caching platform $platform"
-	cmd /c "$env:CORDOVA_CACHE\$platformFetchCordovaVersion\node_modules\.bin\cordova" platform add $platform
-	cmd /c "$env:CORDOVA_CACHE\$platformFetchCordovaVersion\node_modules\.bin\cordova" platform remove $platform
+foreach($platform in $oneOffPlatforms.Keys) {
+	foreach($platVer in $oneOffPlatforms.Item($platform)) {
+		Write-Host "Caching platform $platform version $platVer"
+		cmd /c "$env:CORDOVA_CACHE\$platformFetchCordovaVersion\node_modules\.bin\cordova" platform add $platVer 1>> $pwd\stdout.txt
+		cmd /c "$env:CORDOVA_CACHE\$platformFetchCordovaVersion\node_modules\.bin\cordova" platform remove $platform 1>> $pwd\stdout.txt
+	}
 }
 cd ..
 # Use rmdir since this does not hit "path too long" errors common when deleting node_module folders by full path. (Old tech FTW)
