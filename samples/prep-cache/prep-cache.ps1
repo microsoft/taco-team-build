@@ -10,17 +10,21 @@
 # 	CORDOVA_CACHE
 # 	GRADLE_USER_HOME
 #
+# For consistancy sake, it makes sense to also set the following environment variables for use with the base Cordova CLI as well:
+#   CORDOVA_HOME=%CORDOVA_CACHE%\_cordova
+#   PLUGMAN_HOME=%CORDOVA_CACHE%\_plugman
+#
 # Then set the following to get the script to run:
 # 	ANT_HOME
 #	JAVA_HOME
 #	ANDROID_HOME
 #	%ANT_HOME%\bin, nodejs, Git command line tools, and npm need to be in PATH
 
-$versions = "4.3.0", "5.0.0";
+$versions = "4.3.0", "5.0.0", "5.1.0";
 $platforms = "android", "windows", "wp8";
-$plugins = "https://github.com/Chuxel/taco-cordova-support-plugin.git", "cordova-plugin-whitelist", "cordova-plugin-whitelist@1.0.0";
+$plugins = "https://github.com/Chuxel/taco-cordova-support-plugin.git", "cordova-plugin-whitelist";
 $plugnFetchCordovaVersion = "5.0.0";
-$oneOffPlatforms = "android@3.7.0";
+$oneOffPlatforms = "android@3.7.2", "android@4.0.2";
 $platformFetchCordovaVersion = "5.0.0";
 
 $pwd = $(get-location)
@@ -76,9 +80,8 @@ foreach($version in $versions) {
 	}
 	$fullpath = (gi $version).fullname
 	Write-Host "Path to install cordova-lib / Cordova CLI: $fullpath"
-
 	cd $version
-	# Grabbing both cordova-lib and cordova so developers can use Cordova eitehr as a node module or a CLI
+	# Grabbing both cordova-lib and cordova so developers can use Cordova either as a node module or a CLI
 	npm install cordova-lib@$version
 	npm install cordova@$version
 	cd ..
