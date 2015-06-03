@@ -22,6 +22,7 @@ var fs = require('fs'),
 
 // Global vars
 var cordovaCache = process.env["CORDOVA_CACHE"] || (process.platform == "darwin" ? path.join(process.env["HOME"],".cordova-cache") : path.join(process.env["APPDATA"], "cordova-cache")),
+    defaultCordovaVersion = process.env["CORDOVA_DEFAULT_VERSION"] || DEFAULT_CORDOVA_VERSION,
     projectPath = process.cwd(),
     cordovaVersion,
     loadedCordovaVersion,
@@ -52,7 +53,7 @@ function setupCordova(obj) {
             cordovaVersion = require(path.join(projectPath, "taco.json"))["cordova-cli"];
             console.log("Cordova version set to " + cordovaVersion + " based on the contents of taco.json");
         } else {
-            cordovaVersion = DEFAULT_CORDOVA_VERSION;
+            cordovaVersion = defaultCordovaVersion;
             console.log("taco.json not found. Using default Cordova version of " + cordovaVersion);
         }
     }

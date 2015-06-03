@@ -20,6 +20,16 @@
 #	ANDROID_HOME
 #	%ANT_HOME%\bin, nodejs, Git command line tools, and npm need to be in PATH
 
+function Call-Cordova([string] $cmd) {
+	$params = $cmd.Split(" ");
+	$exitCode = (Start-Process -FilePath $cordovaCmd -ArgumentList $params -Wait -NoNewWindow -RedirectStandardOutput $pwd\stdout.txt -RedirectStandardError $pwd\stderr.txt -PassThru).ExitCode;
+	if($exitCode -ne 0) {
+		type $pwd\stderr.txt
+		Write-Error "Non-zero exit code returned from Cordova call. stderr is in the console. See stdout.txt for standard output."
+		exit $exitCode
+	}
+}
+
 $versions = "4.3.0", "5.0.0", "5.1.0";
 $platforms = "android", "windows", "wp8";
 $plugins = @{	
@@ -36,16 +46,16 @@ $pwd = $(get-location)
 Write-Host "Current location: $pwd"
 
 if((!$env:ANT_HOME) -or (!$env:JAVA_HOME) -or (!$env:ANDROID_HOME))	 {
-	Write-Host "ERROR: ANT_HOME, JAVA_HOME, and ANDROID_HOME environment variables must be set."
+	Write-Error "ERROR: ANT_HOME, JAVA_HOME, and ANDROID_HOME environment variables must be set."
 	exit 1;
 }
 if(!$env:CORDOVA_CACHE) {
 	$env:CORDOVA_CACHE=$env:APPDATA + "\cordova-cache"
-	Write-Host "WARNING: CORDOVA_CACHE not set - Setting to $env:CORDOVA_CACHE."
+	Write-Warning "CORDOVA_CACHE not set - Setting to $env:CORDOVA_CACHE."
 }
 
 if(!$env:GRADLE_USER_HOME) {
-	Write-Host "WARNING: GRADLE_USER_HOME not set - Will be in a user specific location."
+	Write-Warning "GRADLE_USER_HOME not set - Will be in a user specific location."
 }
 
 Write-Host "Cordova CLI versions to cache: $versions"
@@ -74,9 +84,9 @@ $env:PLUGMAN_HOME=$env:CORDOVA_CACHE + "\_plugman";
 Write-Host "Target PLUGMAN_HOME: $env:PLUGMAN_HOME"
 
 if(Test-Path -Path $env:CORDOVA_CACHE) {
-	Write-Host "WARNING: Cache folder already exists."
+	Write-Warning "Cache folder already exists."
 } else {
-	mkdir $env:CORDOVA_CACHE
+	mkdir $env:CORDOVA_CACHE 1>> $pwd\stdout.txt
 }
 
 cd $env:CORDOVA_CACHE
@@ -91,29 +101,32 @@ if(Test-Path -Path "tempProj") {
 foreach($version in $versions) {
 	Write-Host "Prepping Cordova $version"
 	if(!(Test-Path -Path $version)) {
-		mkdir $version;
+		mkdir $version 1>> $pwd\stdout.txt
 	}
 	$fullpath = (gi $version).fullname
 	Write-Host "Path to install cordova-lib / Cordova CLI: $fullpath"
 	cd $version
 	# Grabbing both cordova-lib and cordova so developers can use Cordova either as a node module or a CLI
-	npm install cordova-lib@$version 1>> $pwd\stdout.txt
-	npm install cordova@$version 1>> $pwd\stdout.txt
+	npm install cordova-lib@$version 1> $pwd\stdout.txt 2> $pwd\stderr.txt
+	npm install cordova@$version 1> $pwd\stdout.txt 2> $pwd\stderr.txt
 	cd ..
 
 	# Cache pinned platform version as approprate for this CLI version	
+	$cordovaCmd="$fullpath\node_modules\.bin\cordova.cmd" 
 	Write-Host "Prepping project to cache pinned platform versions for Cordova $version"
-	cmd /c "$fullpath\node_modules\.bin\cordova" create tempProj 1>> $pwd\stdout.txt
+	
+	Call-Cordova "create tempProj"
+	#cmd /c $cordovaCmd create tempProj 1>> $pwd\stdout.txt
 	cd tempProj
 	foreach($platform in $platforms) {
 		Write-Host "Caching pinned version of platform $platform in Cordova $version"
-		cmd /c "$fullpath\node_modules\.bin\cordova" platform add $platform 1>> $pwd\stdout.txt
+		Call-Cordova "platform add $platform"
 		if($platform -eq "android") {
 				# We also need to build to ensure GRADLE_USER_HOME are prepped for Android
 				Write-Host "Building to force depenedency acquistion for $platform in Cordova $version"
-				cmd /c "$fullpath\node_modules\.bin\cordova" build $platform 1>> $pwd\stdout.txt
+				Call-Cordova "build $platform"
 		}
-		cmd /c "$fullpath\node_modules\.bin\cordova" platform remove $platform 1>> $pwd\stdout.txt
+		Call-Cordova "platform remove $platform"
 	}
 	cd ..
 	# Use rmdir since this does not hit "path too long" errors common when deleting node_module folders by full path. (Old tech FTW)
@@ -121,38 +134,40 @@ foreach($version in $versions) {
 }
 
 # Cache plugins
+$cordovaCmd="$env:CORDOVA_CACHE\$plugnFetchCordovaVersion\node_modules\.bin\cordova.cmd"
 Write-Host "Prepping project to cache dynamically acquired plugins"
-cmd /c "$env:CORDOVA_CACHE\$plugnFetchCordovaVersion\node_modules\.bin\cordova" create tempProj 1>> $pwd\stdout.txt
+Call-Cordova "create tempProj"
 cd tempProj
 # Remove the whitelist plugin so it doesn't conflict if we're installing multiple versions of it to cache
-cmd /c "$env:CORDOVA_CACHE\$platformFetchCordovaVersion\node_modules\.bin\cordova" platform add android 1>> $pwd\stdout.txt
-cmd /c "$env:CORDOVA_CACHE\$platformFetchCordovaVersion\node_modules\.bin\cordova" plugin remove cordova-plugin-whitelist --save 1>> $pwd\stdout.txt
-cmd /c "$env:CORDOVA_CACHE\$platformFetchCordovaVersion\node_modules\.bin\cordova" platform remove android 1>> $pwd\stdout.txt
+Call-Cordova "platform add android"
+Call-Cordova "plugin remove cordova-plugin-whitelist --save"
+Call-Cordova "platform remove android"
 # Now cache plugins
 foreach($plugin in $plugins.Keys) {
 	foreach($pluginVer in $plugins.Item($plugin)) {
 		Write-Host "Caching plugin $plugin version $pluginVer"
-		cmd /c "$env:CORDOVA_CACHE\$plugnFetchCordovaVersion\node_modules\.bin\cordova" plugin add $pluginVer 1>> $pwd\stdout.txt
-		cmd /c "$env:CORDOVA_CACHE\$plugnFetchCordovaVersion\node_modules\.bin\cordova" plugin remove $plugin 1>> $pwd\stdout.txt
+		Call-Cordova "plugin add $pluginVer"
+		Call-Cordova "plugin remove $plugin"
 	}
 }
 cd ..
 cmd /c "rmdir /S /Q tempProj" 
 
 # Cache one-off (non-pinned) platforms
+$cordovaCmd="$env:CORDOVA_CACHE\$platformFetchCordovaVersion\node_modules\.bin\cordova.cmd"
 Write-Host "Prepping project to cache specific platform versions"
-cmd /c "$env:CORDOVA_CACHE\$platformFetchCordovaVersion\node_modules\.bin\cordova" create tempProj 1>> $pwd\stdout.txt
+Call-Cordova "create tempProj"
 cd tempProj
 # Remove the whitelist plugin since it doesn't work with older versions of platforms and is in the default template for 5.0.0+
-cmd /c "$env:CORDOVA_CACHE\$platformFetchCordovaVersion\node_modules\.bin\cordova" platform add android 1>> $pwd\stdout.txt
-cmd /c "$env:CORDOVA_CACHE\$platformFetchCordovaVersion\node_modules\.bin\cordova" plugin remove cordova-plugin-whitelist --save 1>> $pwd\stdout.txt
-cmd /c "$env:CORDOVA_CACHE\$platformFetchCordovaVersion\node_modules\.bin\cordova" platform remove android 1>> $pwd\stdout.txt
+Call-Cordova "platform add android"
+Call-Cordova "plugin remove cordova-plugin-whitelist --save"
+Call-Cordova "platform remove android"
 # Now cache other platform versions
 foreach($platform in $oneOffPlatforms.Keys) {
 	foreach($platVer in $oneOffPlatforms.Item($platform)) {
 		Write-Host "Caching platform $platform version $platVer"
-		cmd /c "$env:CORDOVA_CACHE\$platformFetchCordovaVersion\node_modules\.bin\cordova" platform add $platVer 1>> $pwd\stdout.txt
-		cmd /c "$env:CORDOVA_CACHE\$platformFetchCordovaVersion\node_modules\.bin\cordova" platform remove $platform 1>> $pwd\stdout.txt
+		Call-Cordova "platform add $platVer"
+		Call-Cordova "platform remove $platform"
 	}
 }
 cd ..
