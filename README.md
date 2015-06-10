@@ -10,8 +10,9 @@ Specifically it helps with the following challenges:
 
 1.  Handling multiple versions of the Cordova CLI from the same build server in a performant way on Windows
 2.  Automated detection of whether a platform should be added avoid a non-zero exit code for incremental builds (the default CLI behavior)
-3.  Generating an ipa for iOS
-4.  Supporting Visual Studio 2015's res/native, Task Runner Explorer, and Windows packaging features (via [a plugin](http://aka.ms/vstacoplugin))
+3.  Removing plugins/android.json, plugins/ios.json, plugins/windows.json, or plugins/wp8.json files [which can cause strange results if present](https://github.com/Microsoft/cordova-docs/tree/master/tips-and-workarounds/general#missingexclude) when adding a platform. (Though files are not removed if the Cordova platforms folder was added to source control.)
+4.  Generating an ipa for iOS
+5.  Supporting Visual Studio 2015's res/native, Task Runner Explorer, and Windows packaging features (via [a plugin](http://aka.ms/vstacoplugin))
 
 It is a generic node module so it can be used with any number of build systems including Gulp, Grunt, and Jake.
 

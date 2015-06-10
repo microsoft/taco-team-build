@@ -59,7 +59,7 @@ function setupCordova(obj) {
     }
 
     // Check if the specified version of Cordova is available in a local cache and install it if not 
-    // Uses "CORDOVA_CACHE" environment variable or just adds a _cordova folder in the project path as a temporary build artifact
+    // Uses "CORDOVA_CACHE" environment variable or defaults of %APPDATA%\cordova-cache on windows and ~/.cordova-cache on OSX
     if (!fs.existsSync(cordovaCache)) {
         fs.mkdirSync(cordovaCache);
         console.log("Creating " + cordovaCache);
@@ -109,6 +109,15 @@ function addPlatformsToProject(cordova, cordovaPlatforms) {
     cordovaPlatforms.forEach(function (platform) {
         if (!fs.existsSync(path.join(projectPath, "platforms", platform))) {
             console.log("Adding platform " + platform + "...");
+            // Fix for when the plugins/<platform>.json file is accidently checked into source control 
+            // without the corresponding contents of the platforms folder. This can cause the behavior
+            // described here: http://stackoverflow.com/questions/30698118/tools-for-apache-cordova-installed-plugins-are-skipped-in-build 
+            var platformPluginJsonFile = path.join(projectPath, "plugins", platform.trim() + ".json")
+            if(fs.existsSync(platformPluginJsonFile)) {
+                console.log(platform + ".json file found at \"" + platformPluginJsonFile + "\". Removing to ensure plugins install properly in newly added platform.")
+                fs.unlinkSync(platformPluginJsonFile);
+            }
+            // Now add the platform
             promise = promise.then(function () { return cordova.raw.platform('add', platform); });
         } else {
             console.log("Platform " + platform + " already added.");
