@@ -32,7 +32,10 @@ var cordovaCache = process.env["CORDOVA_CACHE"] || (process.platform == "darwin"
 function configure(obj) {
     if (obj.cordovaCache !== undefined) cordovaCache = obj.cordovaCache;
     if (obj.cordovaVersion !== undefined) cordovaVersion = obj.cordovaVersion;
-    if (obj.projectPath !== undefined) projectPath = obj.projectPath;
+    if (obj.projectPath !== undefined) projectPath = path.resolve(obj.projectPath);
+    if(!fs.existsSync(projectPath)) {
+        throw "Specified project path does not exist: \"" + projectPath + "\""
+    }
 }
 
 // Gets and/or downloads the appropriate cordova node module for use based on options or taco.json
@@ -235,4 +238,3 @@ module.exports = {
     buildProject: buildProject,
     packageProject: packageProject
 };
-
