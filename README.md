@@ -50,18 +50,18 @@ Allows you to programatically configure the Cordova version to use, the location
 var build = require('taco-team-build');
 build.configure({
     cordovaCache: "D:\\path\\to\\cache",
-    cordovaVersion: "4.3.0",
+    cordovaVersion: "4.3.1",
     projectPath: "myproject"
 }).done();
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 -   **cordovaCache** defaults to either the **CORDOVA\_CACHE** environment variable or %APPDATA%\cordova-cache on Windows and ~/.cordova-cache on OSX if no value is set for the variable. This will also automatically set CORDOVA\_HOME and PLUGMAN\_HOME to sub-folders in this same location to avoid conflicting with any global instllations you may have.
 -   **projectPath** defaults to the current working directory.
--   If the **cordovaVersion** is not set, the version will be pulled from **taco.json** if present and otherwise default to 4.3.0.  You can manually create a taco.json file if you are not using Visual Studio by including the following in the file:
+-   If the **cordovaVersion** is not set, the version will be pulled from **taco.json** if present and otherwise default to 5.1.1.  You can manually create a taco.json file if you are not using Visual Studio by including the following in the file:
 
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     {
-        "cordova-cli": "4.3.0"
+        "cordova-cli": "4.3.1"
     }
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

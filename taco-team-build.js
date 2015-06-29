@@ -3,10 +3,11 @@
   Licensed under the MIT license. See LICENSE file in the project root for full license information.
 */
 // Constants
-var DEFAULT_CORDOVA_VERSION = "4.3.0",
+var DEFAULT_CORDOVA_VERSION = "5.1.1",
     // Support plugin adds in two VS features and two bug fixes: Task Runner Explorer event bindings and res/native 
     SUPPORT_PLUGIN = "https://github.com/Chuxel/taco-cordova-support-plugin.git",
-    SUPPORT_PLUGIN_ID = "com.microsoft.visualstudio.taco",
+    SUPPORT_PLUGIN_ID = "cordova-plugin-vs-taco-support",
+    OLD_SUPPORT_PLUGIN_ID = "com.microsoft.visualstudio.taco",
     // cordova-lib is technically what we want to given that is what cordova gives us when you "requre"
     // the node the "cordova" node module. However, the "cordova" and "cordova-lib" package version 
     // numbers do not match in CLI < v3.7.0. Ex: 3.6.3-0.2.13 does not match cordova-lib's version. 
@@ -194,15 +195,29 @@ function getCordova() {
         if(cdv.cordova) {
             cdv = cdv.cordova;
         }
-        // Install VS support plugin if not already present
-        if(!fs.existsSync(path.join(projectPath, "plugins", SUPPORT_PLUGIN_ID))) {
-            console.log("Adding support plugin.");
-            return cdv.raw.plugin("add", SUPPORT_PLUGIN).then(function() { return cdv; });
+
+        // Remove old version f support plugin if present. Add the new one if it's missing.
+        if(fs.existsSync(path.join(projectPath, "plugins", OLD_SUPPORT_PLUGIN_ID))) {
+            console.log("Removing old support plugin.");
+            return cdv.raw.plugin("remove", OLD_SUPPORT_PLUGIN_ID).then(function() { return addSupportPlugin(cdv); });
         } else {
-            console.log("Support plugin already added.");
-        }
+            return addSupportPlugin(cdv);
+        }        
+    } else {    
+        return Q(cdv);
     }
-    return Q(cdv);
+}
+
+// Utility method that adds the support plugin
+function addSupportPlugin(cdv) {
+    // Install VS support plugin if not already present
+    if(!fs.existsSync(path.join(projectPath, "plugins", SUPPORT_PLUGIN_ID))) {
+        console.log("Adding support plugin.");
+        return cdv.raw.plugin("add", SUPPORT_PLUGIN).then(function() { return cdv; });
+    } else {
+        console.log("Support plugin already added.");
+        return Q(cdv);
+    }
 }
 
 // Utility method that coverts args into a consistant input understood by cordova-lib
