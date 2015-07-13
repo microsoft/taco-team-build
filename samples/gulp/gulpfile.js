@@ -3,6 +3,7 @@
   Licensed under the MIT license. See LICENSE file in the project root for full license information.
 */
 var gulp = require("gulp"),
+    fs = require("fs"),
     ts = require("gulp-typescript"),
     cordovaBuild = require("taco-team-build");
 
@@ -14,8 +15,9 @@ var winPlatforms = ["android", "windows", "wp8"],
         windows: ["--release", "--device"],                                         // or "-- --win" for Windows. You may also encounter a
         wp8: ["--release", "--device"]                                              // "TypeError" after adding a flag Android doesn't recognize
     },                                                                              // when using Cordova < 4.3.0. This is fixed in 4.3.0.
-    platformsToBuild = process.platform == "darwin" ? osxPlatforms : winPlatforms;  // "Darwin" is the platform name returned for OSX. 
-                                                                                    // This could be extended to include Linux as well.
+    platformsToBuild = process.platform == "darwin" ? osxPlatforms : winPlatforms,  // "Darwin" is the platform name returned for OSX. 
+    tsconfigPath = "scripts/tsconfig.json";                                         // This could be extended to include Linux as well.
+
 gulp.task("default", ["package"], function () {
     // Copy results to bin folder
     gulp.src("platforms/android/ant-build/*.apk").pipe(gulp.dest("bin/release/android"));   // Ant build
@@ -26,17 +28,26 @@ gulp.task("default", ["package"], function () {
 });
 
 gulp.task("scripts", function () {
-    // Compile TypeScript code
-    gulp.src("scripts/**/*.ts")
-        .pipe(ts({
-            noImplicitAny: false,
-            noEmitOnError: true,
-            removeComments: false,
-            sourceMap: true,
-            out: "appBundle.js",
-        target: "es5"
-        }))
-        .pipe(gulp.dest("www/scripts"));
+    // Compile TypeScript code - This sample is designed to compile anything under the "scripts" folder using settings
+    // in scripts/tsconfig.json if present or this gulpfile if not.  Adjust as appropriate for your use case.
+    if (fs.existsSync(tsconfigPath)) {
+        // Use settings from scripts/tsconfig.json
+        gulp.src("scripts/**/*.ts")
+            .pipe(ts(ts.createProject(tsconfigPath)))
+            .pipe(gulp.dest("."));
+    } else {
+        // Otherwise use these default settings
+         gulp.src("scripts/**/*.ts")
+            .pipe(ts({
+                noImplicitAny: false,
+                noEmitOnError: true,
+                removeComments: false,
+                sourceMap: true,
+                out: "appBundle.js",
+            target: "es5"
+            }))
+            .pipe(gulp.dest("www/scripts"));        
+    }
 });
 
 gulp.task("build", ["scripts"], function () {
