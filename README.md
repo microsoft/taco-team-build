@@ -112,8 +112,6 @@ Not only will your flag not be picked up but older versions of the Cordova Andro
 ### packageProject(platforms, args)
 Supported platforms: ios
 
-This feature is primarily for use with versions of **Cordova < 5.1.1.** Cordova 5.1.1 introduced a build.json file that can be used to set packaging options.
-
 Runs any post-build packaging steps required for the specified platforms. The method returns a promise that is fulfilled once packaging is completed. Passed in **platforms** can be an array of platforms or a single platform string. Passed in **args** can be an array of arguments or an object with an array of arguments per platform name.
 
 **Note:** The android, windows, and wp8 platforms automatically package on build and you can place the appropriate files for signing under res/native/android or res/native/windows. See [MSDN documentation](https://msdn.microsoft.com/en-us/library/dn757048(v=vs.140).aspx) for details.
