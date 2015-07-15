@@ -1,18 +1,20 @@
 Visual Studio Tools for Apache Cordova (TACo) Team Build Helper Node Module
 ===============
-**Note: This node module is intended for use with the Cordova CLI or Visual Studio 2015, is intended to be a sample, and is not an offically supported Microsoft product. It does not work with Visual Studio 2013 CTPs.**
+**Note: This node module is intended for use with the Cordova CLI or Visual Studio 2015 and is not an offically supported Microsoft product. It does not work with Visual Studio 2013 CTPs.**
 
 License: MIT
 
-taco-team-build is a sample node module designed to avoid common pitfalls when building Cordova apps in a Team or Continuous Integration environment. It was put together for a set of tutorials for the [Visual Studio 2015 Tools for Apache Cordova](http://aka.ms/cordova) (TACo) featureset in Visual Studio but can be used with standard cordova projects.
+taco-team-build is a sample node module designed to avoid common pitfalls when building Cordova apps in a Team or Continuous Integration (CI) environment. It was put together for a set of tutorials for the [Visual Studio 2015 Tools for Apache Cordova](http://aka.ms/cordova) (TACo) featureset in Visual Studio but can be used with standard cordova projects.
 
 Specifically it helps with the following challenges:
 
-1.  Handling multiple versions of the Cordova CLI from the same build server in a performant way on Windows
-2.  Automated detection of whether a platform should be added avoid a non-zero exit code for incremental builds (the default CLI behavior)
-3.  Removing plugins/android.json, plugins/ios.json, plugins/windows.json, or plugins/wp8.json files [which can cause strange results if present](https://github.com/Microsoft/cordova-docs/tree/master/tips-and-workarounds/general#missingexclude) when adding a platform. (Though files are not removed if the Cordova platforms folder was added to source control.)
-4.  Generating an ipa for iOS
-5.  Supporting Visual Studio 2015's res/native, Task Runner Explorer, and Windows packaging features (via [a plugin](http://aka.ms/vstacoplugin))
+1.  Handling multiple versions of Cordova from the same build server in a performant way on Windows
+2.  Allowing developers to specify a location to store versions of Cordova, its plugins, and platforms outside of a user's home directory (useful in CI environments where a system user may run the build) 
+3.  Generating an ipa for iOS
+4.  Automated detection of whether a platform should be added avoid a non-zero exit code for incremental builds (the default CLI behavior)
+5.  Removing plugins/android.json, plugins/ios.json, plugins/windows.json, or plugins/wp8.json files [which can cause strange results if present](https://github.com/Microsoft/cordova-docs/tree/master/tips-and-workarounds/general#missingexclude) when adding a platform. (Though files are not removed if the Cordova platforms folder was added to source control.)
+6.  Fixes for problems with symlinks and execute bits being lost when a plugin or platform is added to source control from Windows (via a plugin)
+7.  Supporting Visual Studio 2015's res/native and Windows packaging features and some bug fixes (via a plugin)
 
 It is a generic node module so it can be used with any number of build systems including Gulp, Grunt, and Jake.
 

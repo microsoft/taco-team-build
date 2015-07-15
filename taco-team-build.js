@@ -2,10 +2,17 @@
   Copyright (c) Microsoft. All rights reserved.  
   Licensed under the MIT license. See LICENSE file in the project root for full license information.
 */
+// Module dependencies
+var fs = require('fs'),
+    path = require('path'),
+    Q = require('q'),
+    glob = require("glob"),
+    exec = Q.nfbind(require('child_process').exec);
+
 // Constants
 var DEFAULT_CORDOVA_VERSION = "5.1.1",
-    // Support plugin adds in two VS features and two bug fixes: Task Runner Explorer event bindings and res/native 
-    SUPPORT_PLUGIN = "https://github.com/Chuxel/taco-cordova-support-plugin.git",
+    // Support plugin adds in two VS features and a set of bug fixes. Plugin needs to be local due to a bug in Cordova 5.1.1 when fetching from Git.
+    SUPPORT_PLUGIN = path.join(__dirname,"taco-cordova-support-plugin"),
     SUPPORT_PLUGIN_ID = "cordova-plugin-vs-taco-support",
     OLD_SUPPORT_PLUGIN_ID = "com.microsoft.visualstudio.taco",
     // cordova-lib is technically what we want to given that is what cordova gives us when you "requre"
@@ -14,12 +21,6 @@ var DEFAULT_CORDOVA_VERSION = "5.1.1",
     // If you need < v3.7.0, update this constant to "cordova".
     CORDOVA_LIB = "cordova-lib";
 
-// Module dependencies
-var fs = require('fs'),
-    path = require('path'),
-    Q = require('q'),
-    glob = require("glob"),
-    exec = Q.nfbind(require('child_process').exec);
 
 // Global vars
 var cordovaCache = process.env["CORDOVA_CACHE"] || (process.platform == "darwin" ? path.join(process.env["HOME"],".cordova-cache") : path.join(process.env["APPDATA"], "cordova-cache")),
