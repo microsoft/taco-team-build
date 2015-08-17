@@ -31,11 +31,11 @@ module.exports = function(grunt) {
 
         var platformsToBuild = process.platform == "darwin" ? ["ios"] : ["android", "windows", "wp8"], // Darwin == OSX
             buildArgs = {
-                android: ["--release", "--ant"],    // Warning: Omit the extra "--" when referencing platform
-                ios: ["--release", "--device"],     // specific preferences like "-- --ant" for Android
-                windows: ["--release"],             // or "-- --win" for Windows. You may also encounter a
-                wp8: ["--release"]                  // "TypeError" after adding a flag Android doesn't recognize
-            };                                      // when using Cordova < 4.3.0. This is fixed in 4.3.0.
+                android: ["--release", "--device","--gradleArg=--no-daemon"],   // Warning: Omit the extra "--" when referencing platform
+                ios: ["--release", "--device"],                                 // specific preferences like "-- --ant" for Android
+                windows: ["--release", "--device"],                             // or "-- --win" for Windows. You may also encounter a
+                wp8: ["--release", "--device"]                                  // "TypeError" after adding a flag Android doesn't recognize
+            };                                                                  // when using Cordova < 4.3.0. This is fixed in 4.3.0.
 
         cordovaBuild.buildProject(platformsToBuild, buildArgs)
             .then(function() {
