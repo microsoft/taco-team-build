@@ -10,7 +10,7 @@ var gulp = require("gulp"),
 var winPlatforms = ["android", "windows", "wp8"],
     osxPlatforms = ["ios"],
     buildArgs = {
-        android: ["--release","--device"],                                          // Warning: Omit the extra "--" when referencing platform
+        android: ["--release","--device","--gradleArg=--no-daemon"],                // Warning: Omit the extra "--" when referencing platform
         ios: ["--release", "--device"],                                             // specific preferences like "-- --ant" for Android
         windows: ["--release", "--device"],                                         // or "-- --win" for Windows. You may also encounter a
         wp8: ["--release", "--device"]                                              // "TypeError" after adding a flag Android doesn't recognize
