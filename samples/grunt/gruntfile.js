@@ -29,7 +29,8 @@ module.exports = function(grunt) {
         var cordovaBuild = require('taco-team-build'),
             done = this.async();
 
-        var platformsToBuild = process.platform == "darwin" ? ["ios"] : ["android", "windows", "wp8"], // Darwin == OSX
+        var platformsToBuild = process.platform == "darwin" ? ["ios"] :
+                               (process.platform === "linux" ? ["android"] : ["android", "windows", "wp8"]), // Darwin == OSX
             buildArgs = {
                 android: ["--release", "--device","--gradleArg=--no-daemon"],   // Warning: Omit the extra "--" when referencing platform
                 ios: ["--release", "--device"],                                 // specific preferences like "-- --ant" for Android

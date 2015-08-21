@@ -23,7 +23,7 @@ var DEFAULT_CORDOVA_VERSION = "5.1.1",
 
 
 // Global vars
-var cordovaCache = process.env["CORDOVA_CACHE"] || (process.platform == "darwin" ? path.join(process.env["HOME"],".cordova-cache") : path.join(process.env["APPDATA"], "cordova-cache")),
+var cordovaCache = process.env["CORDOVA_CACHE"] || (process.platform === "darwin" || process.platform === "linux" ? path.join(process.env["HOME"],".cordova-cache") : path.join(process.env["APPDATA"], "cordova-cache")),
     defaultCordovaVersion = process.env["CORDOVA_DEFAULT_VERSION"] || DEFAULT_CORDOVA_VERSION,
     projectPath = process.cwd(),
     cordovaVersion,
