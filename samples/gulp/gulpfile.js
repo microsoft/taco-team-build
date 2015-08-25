@@ -8,6 +8,7 @@ var gulp = require("gulp"),
     cordovaBuild = require("taco-team-build");
 
 var winPlatforms = ["android", "windows", "wp8"],
+    linuxPlatforms = ["android"],
     osxPlatforms = ["ios"],
     buildArgs = {
         android: ["--release","--device","--gradleArg=--no-daemon"],                // Warning: Omit the extra "--" when referencing platform
@@ -15,8 +16,9 @@ var winPlatforms = ["android", "windows", "wp8"],
         windows: ["--release", "--device"],                                         // or "-- --win" for Windows. You may also encounter a
         wp8: ["--release", "--device"]                                              // "TypeError" after adding a flag Android doesn't recognize
     },                                                                              // when using Cordova < 4.3.0. This is fixed in 4.3.0.
-    platformsToBuild = process.platform == "darwin" ? osxPlatforms : winPlatforms,  // "Darwin" is the platform name returned for OSX. 
-    tsconfigPath = "scripts/tsconfig.json";                                         // This could be extended to include Linux as well.
+    platformsToBuild = process.platform === "darwin" ? osxPlatforms :
+                       (process.platform === "linux" ? linuxPlatforms : winPlatforms),  // "Darwin" is the platform name returned for OSX. 
+    tsconfigPath = "scripts/tsconfig.json";                                             // This could be extended to include Linux as well.
 
 gulp.task("default", ["package"], function () {
     // Copy results to bin folder
@@ -52,6 +54,22 @@ gulp.task("scripts", function () {
 
 gulp.task("build", ["scripts"], function () {
     return cordovaBuild.buildProject(platformsToBuild, buildArgs);
+});
+
+gulp.task("build-win", ["scripts"], function() {
+    return cordovaBuild.buildProject("windows", buildArgs);
+});
+
+gulp.task("build-wp8", ["scripts"], function() {
+    return cordovaBuild.buildProject("wp8", buildArgs);
+});
+
+gulp.task("build-android", ["scripts"], function() {
+    return cordovaBuild.buildProject("android", buildArgs);
+});
+
+gulp.task("build-ios", ["scripts"], function() {
+    return cordovaBuild.buildProject("ios", buildArgs);
 });
 
 gulp.task("package", ["build"], function () {
