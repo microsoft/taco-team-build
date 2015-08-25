@@ -16,7 +16,7 @@ var winPlatforms = ["android", "windows", "wp8"],
         windows: ["--release", "--device"],                                         // or "-- --win" for Windows. You may also encounter a
         wp8: ["--release", "--device"]                                              // "TypeError" after adding a flag Android doesn't recognize
     },                                                                              // when using Cordova < 4.3.0. This is fixed in 4.3.0.
-    platformsToBuild = process.platform == "darwin" ? osxPlatforms :
+    platformsToBuild = process.platform === "darwin" ? osxPlatforms :
                        (process.platform === "linux" ? linuxPlatforms : winPlatforms),  // "Darwin" is the platform name returned for OSX. 
     tsconfigPath = "scripts/tsconfig.json";                                             // This could be extended to include Linux as well.
 
