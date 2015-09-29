@@ -7,19 +7,19 @@ var fs = require('fs'),
     path = require('path'),
     Q = require('q'),
     glob = require("glob"),
+    semver = require("semver"),
     exec = Q.nfbind(require('child_process').exec);
 
 // Constants
-var DEFAULT_CORDOVA_VERSION = "5.1.1",
+var DEFAULT_CORDOVA_VERSION = "5.3.1",
     // Support plugin adds in two VS features and a set of bug fixes. Plugin needs to be local due to a bug in Cordova 5.1.1 when fetching from Git.
-    SUPPORT_PLUGIN = path.join(__dirname,"taco-cordova-support-plugin"),
+    SUPPORT_PLUGIN = path.join(__dirname,"cordova-plugin-vs-taco-support"),
     SUPPORT_PLUGIN_ID = "cordova-plugin-vs-taco-support",
-    OLD_SUPPORT_PLUGIN_ID = "com.microsoft.visualstudio.taco",
     // cordova-lib is technically what we want to given that is what cordova gives us when you "requre"
     // the node the "cordova" node module. However, the "cordova" and "cordova-lib" package version 
     // numbers do not match in CLI < v3.7.0. Ex: 3.6.3-0.2.13 does not match cordova-lib's version. 
-    // If you need < v3.7.0, update this constant to "cordova".
-    CORDOVA_LIB = "cordova-lib";
+    CORDOVA_LIB = "cordova-lib",
+    CORDOVA = "cordova";
 
 
 // Global vars
@@ -76,10 +76,13 @@ function setupCordova(obj) {
     if (!fs.existsSync(cordovaModulePath)) {
         fs.mkdirSync(cordovaModulePath);
         fs.mkdirSync(path.join(cordovaModulePath, "node_modules"));
-        console.log("Installing Cordova " + cordovaVersion + ".");
-
-        return exec("npm install " + CORDOVA_LIB + "@" + cordovaVersion, { cwd: cordovaModulePath })
-            .then(handleExecReturn).then(getCordova);
+        console.log("Installing Cordova " + cordovaVersion + ". (This may take a few minutes.)");
+        var cmd = "npm install " + 
+            (semver.lt(cordovaVersion, "3.7.0") ? CORDOVA : CORDOVA_LIB) 
+            + "@" + cordovaVersion
+        return exec(cmd, { cwd: cordovaModulePath })
+            .then(handleExecReturn)
+            .then(getCordova);
     } else {
         console.log("Cordova " + cordovaVersion + " already installed.");
         return getCordova();
@@ -113,16 +116,6 @@ function addPlatformsToProject(cordova, cordovaPlatforms) {
     var promise = Q();
     cordovaPlatforms.forEach(function (platform) {
         if (!fs.existsSync(path.join(projectPath, "platforms", platform))) {
-            console.log("Adding platform " + platform + "...");
-            // Fix for when the plugins/<platform>.json file is accidently checked into source control 
-            // without the corresponding contents of the platforms folder. This can cause the behavior
-            // described here: http://stackoverflow.com/questions/30698118/tools-for-apache-cordova-installed-plugins-are-skipped-in-build 
-            var platformPluginJsonFile = path.join(projectPath, "plugins", platform.trim() + ".json")
-            if(fs.existsSync(platformPluginJsonFile)) {
-                console.log(platform + ".json file found at \"" + platformPluginJsonFile + "\". Removing to ensure plugins install properly in newly added platform.")
-                fs.unlinkSync(platformPluginJsonFile);
-            }
-            // Now add the platform
             promise = promise.then(function () { return cordova.raw.platform('add', platform); });
         } else {
             console.log("Platform " + platform + " already added.");
@@ -151,37 +144,44 @@ function packageProject(cordovaPlatforms, args) {
 }
 
 // Find the .app folder and use exec to call xcrun with the appropriate set of args
-function createIpa(args) {
-    var deferred = Q.defer();
-    glob(projectPath + "/platforms/ios/build/device/*.app", function (err, matches) {
-        if (err) {
-            deferred.reject(err);
+function createIpa(cordova, args) {
+    
+    return getInstalledPlatformVersion("ios").then(function(version) {        
+        if(semver.lt(version, "3.9.0")) {
+            var deferred = Q.defer();
+            glob(projectPath + "/platforms/ios/build/device/*.app", function (err, matches) {
+                if (err) {
+                    deferred.reject(err);
+                } else {
+                    if (matches.length != 1) {
+                        console.warn( "Skipping packaging. Expected one device .app - found " + matches.length);
+                    } else {
+                        var cmdString = "xcrun -sdk iphoneos PackageApplication \"" + matches[0] + "\" -o \"" +
+                            path.join(path.dirname(matches[0]), path.basename(matches[0], ".app")) + ".ipa\" ";
+                        
+                        // Add additional command line args passed 
+                        var callArgs = getCallArgs("ios", args);
+                        callArgs.options.forEach(function (arg) {
+                            cmdString += " " + arg;
+                        });
+        
+                        console.log("Exec: " + cmdString);
+                        return exec(cmdString)
+                            .then(handleExecReturn)
+                            .fail(function(err) {
+                                deferred.reject(err);
+                            })
+                            .done(function() {
+                                deferred.resolve();
+                            });
+                    }
+                }
+            });
+            return deferred.promise;
         } else {
-            if (matches.length != 1) {
-                throw "Expected only one .app - found " + matches.length;
-            } else {
-                var cmdString = "xcrun -sdk iphoneos PackageApplication \"" + matches[0] + "\" -o \"" +
-                    path.join(path.dirname(matches[0]), path.basename(matches[0], ".app")) + ".ipa\" ";
-                
-                // Add additional command line args passed 
-                var callArgs = getCallArgs("ios", args);
-                callArgs.options.forEach(function (arg) {
-                    cmdString += " " + arg;
-                });
-
-                console.log("Exec: " + cmdString);
-                return exec(cmdString)
-                    .then(handleExecReturn)
-                    .fail(function(err) {
-                        deferred.reject(err);
-                    })
-                    .done(function() {
-                        deferred.resolve();
-                    });
-            }
+            console.log("Skipping packaging. Detected cordova-ios verison that auto-creates ipa.");
         }
     });
-    return deferred.promise;
 }
 
 // Utility method that "requires" the correct version of cordova-lib, adds in the support plugin if not present, sets CORDOVA_HOME 
@@ -192,31 +192,19 @@ function getCordova() {
         process.chdir(projectPath);
         process.env["CORDOVA_HOME"] = path.join(cordovaCache,"_cordova"); // Set platforms to cache in cache locaiton to avoid unexpected results
         process.env["PLUGMAN_HOME"] = path.join(cordovaCache,"_plugman"); // Set plugin cache in cache locaiton to avoid unexpected results
-        cdv = require(path.join(cordovaCache, cordovaVersion, "node_modules", CORDOVA_LIB));
+        cdv = require(path.join(cordovaCache, cordovaVersion, "node_modules", semver.lt(cordovaVersion, "3.7.0") ? CORDOVA : CORDOVA_LIB ));
         if(cdv.cordova) {
             cdv = cdv.cordova;
         }
-
-        // Remove old version f support plugin if present. Add the new one if it's missing.
-        if(fs.existsSync(path.join(projectPath, "plugins", OLD_SUPPORT_PLUGIN_ID))) {
-            console.log("Removing old support plugin.");
-            return cdv.raw.plugin("remove", OLD_SUPPORT_PLUGIN_ID).then(function() { return addSupportPlugin(cdv); });
+        // Install VS support plugin if not already present
+        if(!fs.existsSync(path.join(projectPath, "plugins", SUPPORT_PLUGIN_ID))) {
+            console.log("Adding support plugin.");
+            return cdv.raw.plugin("add", SUPPORT_PLUGIN).then(function() { return cdv; });
         } else {
-            return addSupportPlugin(cdv);
-        }        
+            console.log("Support plugin already added.");
+            return Q(cdv);
+        }
     } else {    
-        return Q(cdv);
-    }
-}
-
-// Utility method that adds the support plugin
-function addSupportPlugin(cdv) {
-    // Install VS support plugin if not already present
-    if(!fs.existsSync(path.join(projectPath, "plugins", SUPPORT_PLUGIN_ID))) {
-        console.log("Adding support plugin.");
-        return cdv.raw.plugin("add", SUPPORT_PLUGIN).then(function() { return cdv; });
-    } else {
-        console.log("Support plugin already added.");
         return Q(cdv);
     }
 }
@@ -238,11 +226,25 @@ function getCallArgs(platforms, args) {
     }
 }
 
+
+// Returns a promise that contains the installed platform version (vs the CLI version). Works in both new and old versions of the Cordova. (No cordova-lib API exists.)
+function getInstalledPlatformVersion(platform) {
+    var platformJsonPath = path.join(projectPath, 'platforms', 'platforms.json')
+    if(fs.existsSync(platformJsonPath)) {
+        var platformsJson = require(path.join(projectPath, 'platforms', 'platforms.json'));
+        return Q(platformsJson[platform]);
+    }  else {
+        return exec(path.join(projectPath, 'platforms', platform, 'cordova', 'version')).then(function(result) {
+           return result[0].replace(/\r?\n|\r/g, ''); 
+        });
+    }
+}
+
 // Utility method to handle the return of exec calls - namely to send output to stdout / stderr
 function handleExecReturn(result) {
     console.log("Exec complete.");
     console.log(result[0]);
-    if (result[1] !== "") {
+    if (result[1] && result[1] !== "") {
         console.error(result[1]);
     }
 }
@@ -252,5 +254,6 @@ module.exports = {
     configure: configure,
     setupCordova: setupCordova,
     buildProject: buildProject,
-    packageProject: packageProject
+    packageProject: packageProject,
+    getInstalledPlatformVersion: getInstalledPlatformVersion
 };
