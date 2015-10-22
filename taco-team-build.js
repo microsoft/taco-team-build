@@ -8,101 +8,59 @@ var fs = require('fs'),
     Q = require('q'),
     glob = require("glob"),
     semver = require("semver"),
+    tu = require("./lib/ttb-util.js"),
+    tc = require("./lib/ttb-cache.js"),
     exec = Q.nfbind(require('child_process').exec);
 
-// Constants
-var DEFAULT_CORDOVA_VERSION = "5.3.1",
-    // Support plugin adds in two VS features and a set of bug fixes. Plugin needs to be local due to a bug in Cordova 5.1.1 when fetching from Git.
-    SUPPORT_PLUGIN = path.join(__dirname,"cordova-plugin-vs-taco-support"),
-    SUPPORT_PLUGIN_ID = "cordova-plugin-vs-taco-support",
-    // cordova-lib is technically what we want to given that is what cordova gives us when you "requre"
-    // the node the "cordova" node module. However, the "cordova" and "cordova-lib" package version 
-    // numbers do not match in CLI < v3.7.0. Ex: 3.6.3-0.2.13 does not match cordova-lib's version. 
-    CORDOVA_LIB = "cordova-lib",
-    CORDOVA = "cordova";
-
-
 // Global vars
-var cordovaCache = process.env["CORDOVA_CACHE"] || (process.platform === "darwin" || process.platform === "linux" ? path.join(process.env["HOME"],".cordova-cache") : path.join(process.env["APPDATA"], "cordova-cache")),
-    defaultCordovaVersion = process.env["CORDOVA_DEFAULT_VERSION"] || DEFAULT_CORDOVA_VERSION,
-    projectPath = process.cwd(),
-    cordovaVersion,
-    loadedCordovaVersion,
-    cdv;
+var defaultConfig = {
+        projectPath: process.cwd(),
+        addSupportPlugin: true,
+        cordovaPackageName: tc.CORDOVA,
+        cordovaVersion: undefined
+    };
 
 // Method to set options
-function configure(obj) {
-    if (obj.cordovaCache !== undefined) cordovaCache = obj.cordovaCache;
-    if (obj.cordovaVersion !== undefined) cordovaVersion = obj.cordovaVersion;
-    if (obj.projectPath !== undefined) projectPath = path.resolve(obj.projectPath);
-    if(!fs.existsSync(projectPath)) {
-        throw "Specified project path does not exist: \"" + projectPath + "\""
-    }
+function configure(cfg) {
+    defaultConfig = tu.parseConfig(cfg, defaultConfig);
 }
 
 // Gets and/or downloads the appropriate cordova node module for use based on options or taco.json
 // Also installs support plugin if not already in the project
-function setupCordova(obj) {
-    if (obj !== undefined) {
-        configure(obj);
-    }
+function setupCordova(cfg) {
+    cfg = tu.parseConfig(cfg, defaultConfig);
 
     // Check if Cordova already loaded
-    if (cdv && cordovaVersion === loadedCordovaVersion) {
-        return Q(cdv);
-    }
+    var cdv = tc.getLoadedModule(cfg.cordovaVersion);
+    if(cdv) return Q(cdv);        
 
-    // If no version is set, try to get the version from taco.json
-    if (cordovaVersion === undefined) {
-        if (fs.existsSync(path.join(projectPath, "taco.json"))) {
-            cordovaVersion = require(path.join(projectPath, "taco.json"))["cordova-cli"];
-            console.log("Cordova version set to " + cordovaVersion + " based on the contents of taco.json");
-        } else {
-            cordovaVersion = defaultCordovaVersion;
-            console.log("taco.json not found. Using default Cordova version of " + cordovaVersion);
-        }
-    }
-
-    // Check if the specified version of Cordova is available in a local cache and install it if not 
-    // Uses "CORDOVA_CACHE" environment variable or defaults of %APPDATA%\cordova-cache on windows and ~/.cordova-cache on OSX
-    if (!fs.existsSync(cordovaCache)) {
-        fs.mkdirSync(cordovaCache);
-        console.log("Creating " + cordovaCache);
-    }
-    console.log("Cordova cache found at " + cordovaCache);
-
-    // Install correct cordova version if not available
-    var cordovaModulePath = path.resolve(path.join(cordovaCache, cordovaVersion));
-    if (!fs.existsSync(cordovaModulePath)) {
-        fs.mkdirSync(cordovaModulePath);
-        fs.mkdirSync(path.join(cordovaModulePath, "node_modules"));
-        console.log("Installing Cordova " + cordovaVersion + ". (This may take a few minutes.)");
-        var cmd = "npm install " + 
-            (semver.lt(cordovaVersion, "3.7.0") ? CORDOVA : CORDOVA_LIB) 
-            + "@" + cordovaVersion
-        return exec(cmd, { cwd: cordovaModulePath })
-            .then(handleExecReturn)
-            .then(getCordova);
-    } else {
-        console.log("Cordova " + cordovaVersion + " already installed.");
-        return getCordova();
-    }
+    return tc.cacheModule(cfg).then(function(result) {
+        process.chdir(cfg.projectPath);
+        cfg.cordovaVersion = result.version;
+        return tc.loadModule(result.path, 
+            cfg.projectPath, 
+            cfg.addSupportPlugin);
+    });
 }
 
 // Main build method
-function buildProject(cordovaPlatforms, args) {
+function buildProject(cordovaPlatforms, args, /* optional */ projectPath) {
     if (typeof (cordovaPlatforms) == "string") {
         cordovaPlatforms = [cordovaPlatforms];
+    }
+    
+    if(!projectPath) {
+        projectPath = defaultConfig.projectPath;
     }
 
     return setupCordova().then(function (cordova) {
         // Add platforms if not done already
-        var promise = addPlatformsToProject(cordova, cordovaPlatforms);
+        var promise = _addPlatformsToProject(cordovaPlatforms, projectPath, cordova);
         //Build each platform with args in args object
         cordovaPlatforms.forEach(function (platform) {
             promise = promise.then(function () {
                 // Build app with platform specific args if specified
-                var callArgs = getCallArgs(platform, args);
+                var callArgs = tu.getCallArgs(platform, args);
                 console.log("Queueing build for platform " + platform + " w/options: " + callArgs.options || "none");
                 return cordova.raw.build(callArgs);
             });
@@ -112,7 +70,7 @@ function buildProject(cordovaPlatforms, args) {
 }
 
 // Prep for build by adding platforms and setting environment variables
-function addPlatformsToProject(cordova, cordovaPlatforms) {
+function _addPlatformsToProject(cordovaPlatforms, projectPath, cordova) {
     var promise = Q();
     cordovaPlatforms.forEach(function (platform) {
         if (!fs.existsSync(path.join(projectPath, "platforms", platform))) {
@@ -125,16 +83,19 @@ function addPlatformsToProject(cordova, cordovaPlatforms) {
 }
 
 // Package project method - Just for iOS currently
-function packageProject(cordovaPlatforms, args) {
+function packageProject(cordovaPlatforms, args, /* optional */ projectPath) {
     if (typeof (cordovaPlatforms) == "string") {
         cordovaPlatforms = [cordovaPlatforms];
+    }
+    if(!projectPath) {
+        projectPath = defaultConfig.projectPath;
     }
 
     return setupCordova().then(function (cordova) {
         var promise = Q(cordova);
         cordovaPlatforms.forEach(function (platform) {
             if (platform == "ios") {
-                promise = promise.then(function() { return createIpa(args); });
+                promise = promise.then(function() { return _createIpa(projectPath, args); });
             } else {
                 console.log("Platform " + platform + " does not require a separate package step.");
             }
@@ -144,9 +105,9 @@ function packageProject(cordovaPlatforms, args) {
 }
 
 // Find the .app folder and use exec to call xcrun with the appropriate set of args
-function createIpa(cordova, args) {
+function _createIpa(projectPath, args) {
     
-    return getInstalledPlatformVersion("ios").then(function(version) {        
+    return tu.getInstalledPlatformVersion(projectPath, "ios").then(function(version) {        
         if(semver.lt(version, "3.9.0")) {
             var deferred = Q.defer();
             glob(projectPath + "/platforms/ios/build/device/*.app", function (err, matches) {
@@ -160,14 +121,14 @@ function createIpa(cordova, args) {
                             path.join(path.dirname(matches[0]), path.basename(matches[0], ".app")) + ".ipa\" ";
                         
                         // Add additional command line args passed 
-                        var callArgs = getCallArgs("ios", args);
+                        var callArgs = tu.getCallArgs("ios", args);
                         callArgs.options.forEach(function (arg) {
                             cmdString += " " + arg;
                         });
         
                         console.log("Exec: " + cmdString);
                         return exec(cmdString)
-                            .then(handleExecReturn)
+                            .then(tu.handleExecReturn)
                             .fail(function(err) {
                                 deferred.reject(err);
                             })
@@ -184,76 +145,16 @@ function createIpa(cordova, args) {
     });
 }
 
-// Utility method that "requires" the correct version of cordova-lib, adds in the support plugin if not present, sets CORDOVA_HOME 
-function getCordova() {
-    // Setup environment
-    if (cdv === undefined || loadedCordovaVersion != cordovaVersion) {
-        loadedCordovaVersion = cordovaVersion;
-        process.chdir(projectPath);
-        process.env["CORDOVA_HOME"] = path.join(cordovaCache,"_cordova"); // Set platforms to cache in cache locaiton to avoid unexpected results
-        process.env["PLUGMAN_HOME"] = path.join(cordovaCache,"_plugman"); // Set plugin cache in cache locaiton to avoid unexpected results
-        cdv = require(path.join(cordovaCache, cordovaVersion, "node_modules", semver.lt(cordovaVersion, "3.7.0") ? CORDOVA : CORDOVA_LIB ));
-        if(cdv.cordova) {
-            cdv = cdv.cordova;
-        }
-        // Install VS support plugin if not already present
-        if(!fs.existsSync(path.join(projectPath, "plugins", SUPPORT_PLUGIN_ID))) {
-            console.log("Adding support plugin.");
-            return cdv.raw.plugin("add", SUPPORT_PLUGIN).then(function() { return cdv; });
-        } else {
-            console.log("Support plugin already added.");
-            return Q(cdv);
-        }
-    } else {    
-        return Q(cdv);
-    }
-}
-
-// Utility method that coverts args into a consistant input understood by cordova-lib
-function getCallArgs(platforms, args) {
-    // Processes single platform string (or array of length 1) and an array of args or an object of args per platform
-    args = args || [];
-    if (typeof (platforms) == "string") {
-        platforms = [platforms];
-    }
-    // If only one platform is specified, check if the args is an object and use the args for this platform if so
-    if (platforms.length == 1) {
-        if (args instanceof Array) {
-            return { platforms: platforms, options: args };
-        } else {
-            return { platforms: platforms, options: args[platforms[0]] };
-        }
-    }
-}
-
-
-// Returns a promise that contains the installed platform version (vs the CLI version). Works in both new and old versions of the Cordova. (No cordova-lib API exists.)
-function getInstalledPlatformVersion(platform) {
-    var platformJsonPath = path.join(projectPath, 'platforms', 'platforms.json')
-    if(fs.existsSync(platformJsonPath)) {
-        var platformsJson = require(path.join(projectPath, 'platforms', 'platforms.json'));
-        return Q(platformsJson[platform]);
-    }  else {
-        return exec(path.join(projectPath, 'platforms', platform, 'cordova', 'version')).then(function(result) {
-           return result[0].replace(/\r?\n|\r/g, ''); 
-        });
-    }
-}
-
-// Utility method to handle the return of exec calls - namely to send output to stdout / stderr
-function handleExecReturn(result) {
-    console.log("Exec complete.");
-    console.log(result[0]);
-    if (result[1] && result[1] !== "") {
-        console.error(result[1]);
-    }
-}
-
 // Public methods
 module.exports = {
     configure: configure,
     setupCordova: setupCordova,
     buildProject: buildProject,
     packageProject: packageProject,
-    getInstalledPlatformVersion: getInstalledPlatformVersion
+    getInstalledPlatformVersion: tu.getInstalledPlatformVersion,
+    getVersionForNpmPackage: tu.getVersionForNpmPackage,
+    cacheModule: function(cfg) {
+        cfg = tu.parseConfig(cfg, defaultConfig);
+        return tc.cacheModule(cfg);
+    }
 };
