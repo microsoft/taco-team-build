@@ -6,18 +6,18 @@
 var fs = require('fs'),
     path = require('path'),
     Q = require('q'),
-    glob = require("glob"),
-    semver = require("semver"),
-    tu = require("./lib/ttb-util.js"),
-    tc = require("./lib/ttb-cache.js"),
+    glob = require('glob'),
+    semver = require('semver'),
+    tu = require('./lib/ttb-util.js'),
+    tc = require('./lib/ttb-cache.js'),
     exec = Q.nfbind(require('child_process').exec);
 
 // Global vars
 var defaultConfig = {
         projectPath: process.cwd(),
         addSupportPlugin: true,
-        cordovaPackageName: tc.CORDOVA,
-        cordovaVersion: undefined
+        nodePackageName: tc.CORDOVA,
+        moduleVersion: undefined
     };
 
 // Method to set options
@@ -31,12 +31,12 @@ function setupCordova(cfg) {
     cfg = tu.parseConfig(cfg, defaultConfig);
 
     // Check if Cordova already loaded
-    var cdv = tc.getLoadedModule(cfg.cordovaVersion);
+    var cdv = tc.getLoadedModule(cfg.moduleVersion);
     if(cdv) return Q(cdv);        
 
     return tc.cacheModule(cfg).then(function(result) {
         process.chdir(cfg.projectPath);
-        cfg.cordovaVersion = result.version;
+        cfg.moduleVersion = result.version;
         return tc.loadModule(result.path, 
             cfg.projectPath, 
             cfg.addSupportPlugin);
@@ -45,7 +45,7 @@ function setupCordova(cfg) {
 
 // Main build method
 function buildProject(cordovaPlatforms, args, /* optional */ projectPath) {
-    if (typeof (cordovaPlatforms) == "string") {
+    if (typeof (cordovaPlatforms) == 'string') {
         cordovaPlatforms = [cordovaPlatforms];
     }
     
@@ -61,10 +61,11 @@ function buildProject(cordovaPlatforms, args, /* optional */ projectPath) {
             promise = promise.then(function () {
                 // Build app with platform specific args if specified
                 var callArgs = tu.getCallArgs(platform, args);
-                console.log("Queueing build for platform " + platform + " w/options: " + callArgs.options || "none");
+                console.log('Queueing build for platform ' + platform + ' w/options: ' + callArgs.options || 'none');
                 return cordova.raw.build(callArgs);
             });
         });
+        
         return promise;
     });
 }
@@ -73,18 +74,19 @@ function buildProject(cordovaPlatforms, args, /* optional */ projectPath) {
 function _addPlatformsToProject(cordovaPlatforms, projectPath, cordova) {
     var promise = Q();
     cordovaPlatforms.forEach(function (platform) {
-        if (!fs.existsSync(path.join(projectPath, "platforms", platform))) {
+        if (!fs.existsSync(path.join(projectPath, 'platforms', platform))) {
             promise = promise.then(function () { return cordova.raw.platform('add', platform); });
         } else {
-            console.log("Platform " + platform + " already added.");
+            console.log('Platform ' + platform + ' already added.');
         }
     });
+    
     return promise;
 }
 
 // Package project method - Just for iOS currently
 function packageProject(cordovaPlatforms, args, /* optional */ projectPath) {
-    if (typeof (cordovaPlatforms) == "string") {
+    if (typeof (cordovaPlatforms) == 'string') {
         cordovaPlatforms = [cordovaPlatforms];
     }
     if(!projectPath) {
@@ -94,12 +96,13 @@ function packageProject(cordovaPlatforms, args, /* optional */ projectPath) {
     return setupCordova().then(function (cordova) {
         var promise = Q(cordova);
         cordovaPlatforms.forEach(function (platform) {
-            if (platform == "ios") {
+            if (platform == 'ios') {
                 promise = promise.then(function() { return _createIpa(projectPath, args); });
             } else {
-                console.log("Platform " + platform + " does not require a separate package step.");
+                console.log('Platform ' + platform + ' does not require a separate package step.');
             }
         });
+        
         return promise;
     });
 }
@@ -107,26 +110,26 @@ function packageProject(cordovaPlatforms, args, /* optional */ projectPath) {
 // Find the .app folder and use exec to call xcrun with the appropriate set of args
 function _createIpa(projectPath, args) {
     
-    return tu.getInstalledPlatformVersion(projectPath, "ios").then(function(version) {        
-        if(semver.lt(version, "3.9.0")) {
+    return tu.getInstalledPlatformVersion(projectPath, 'ios').then(function(version) {        
+        if(semver.lt(version, '3.9.0')) {
             var deferred = Q.defer();
-            glob(projectPath + "/platforms/ios/build/device/*.app", function (err, matches) {
+            glob(projectPath + '/platforms/ios/build/device/*.app', function (err, matches) {
                 if (err) {
                     deferred.reject(err);
                 } else {
                     if (matches.length != 1) {
-                        console.warn( "Skipping packaging. Expected one device .app - found " + matches.length);
+                        console.warn( 'Skipping packaging. Expected one device .app - found ' + matches.length);
                     } else {
-                        var cmdString = "xcrun -sdk iphoneos PackageApplication \"" + matches[0] + "\" -o \"" +
-                            path.join(path.dirname(matches[0]), path.basename(matches[0], ".app")) + ".ipa\" ";
+                        var cmdString = 'xcrun -sdk iphoneos PackageApplication \'' + matches[0] + '\' -o \'' +
+                            path.join(path.dirname(matches[0]), path.basename(matches[0], '.app')) + '.ipa\' ';
                         
                         // Add additional command line args passed 
-                        var callArgs = tu.getCallArgs("ios", args);
+                        var callArgs = tu.getCallArgs('ios', args);
                         callArgs.options.forEach(function (arg) {
-                            cmdString += " " + arg;
+                            cmdString += ' ' + arg;
                         });
         
-                        console.log("Exec: " + cmdString);
+                        console.log('Exec: ' + cmdString);
                         return exec(cmdString)
                             .then(tu.handleExecReturn)
                             .fail(function(err) {
@@ -138,9 +141,10 @@ function _createIpa(projectPath, args) {
                     }
                 }
             });
+            
             return deferred.promise;
         } else {
-            console.log("Skipping packaging. Detected cordova-ios verison that auto-creates ipa.");
+            console.log('Skipping packaging. Detected cordova-ios verison that auto-creates ipa.');
         }
     });
 }
