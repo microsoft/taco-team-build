@@ -6,10 +6,10 @@
 var fs = require('fs'),
     path = require('path'),
     Q = require('q'),
-    glob = require("glob"),
-    semver = require("semver"),
-    tu = require("./lib/ttb-util.js"),
-    tc = require("./lib/ttb-cache.js"),
+    glob = require('glob'),
+    semver = require('semver'),
+    tu = require('./lib/ttb-util.js'),
+    tc = require('./lib/ttb-cache.js'),
     exec = Q.nfbind(require('child_process').exec);
 
 // Global vars
@@ -45,7 +45,7 @@ function setupCordova(cfg) {
 
 // Main build method
 function buildProject(cordovaPlatforms, args, /* optional */ projectPath) {
-    if (typeof (cordovaPlatforms) == "string") {
+    if (typeof (cordovaPlatforms) == 'string') {
         cordovaPlatforms = [cordovaPlatforms];
     }
     
@@ -61,7 +61,7 @@ function buildProject(cordovaPlatforms, args, /* optional */ projectPath) {
             promise = promise.then(function () {
                 // Build app with platform specific args if specified
                 var callArgs = tu.getCallArgs(platform, args);
-                console.log("Queueing build for platform " + platform + " w/options: " + callArgs.options || "none");
+                console.log('Queueing build for platform ' + platform + ' w/options: ' + callArgs.options || 'none');
                 return cordova.raw.build(callArgs);
             });
         });
@@ -74,10 +74,10 @@ function buildProject(cordovaPlatforms, args, /* optional */ projectPath) {
 function _addPlatformsToProject(cordovaPlatforms, projectPath, cordova) {
     var promise = Q();
     cordovaPlatforms.forEach(function (platform) {
-        if (!fs.existsSync(path.join(projectPath, "platforms", platform))) {
+        if (!fs.existsSync(path.join(projectPath, 'platforms', platform))) {
             promise = promise.then(function () { return cordova.raw.platform('add', platform); });
         } else {
-            console.log("Platform " + platform + " already added.");
+            console.log('Platform ' + platform + ' already added.');
         }
     });
     
@@ -86,7 +86,7 @@ function _addPlatformsToProject(cordovaPlatforms, projectPath, cordova) {
 
 // Package project method - Just for iOS currently
 function packageProject(cordovaPlatforms, args, /* optional */ projectPath) {
-    if (typeof (cordovaPlatforms) == "string") {
+    if (typeof (cordovaPlatforms) == 'string') {
         cordovaPlatforms = [cordovaPlatforms];
     }
     if(!projectPath) {
@@ -96,10 +96,10 @@ function packageProject(cordovaPlatforms, args, /* optional */ projectPath) {
     return setupCordova().then(function (cordova) {
         var promise = Q(cordova);
         cordovaPlatforms.forEach(function (platform) {
-            if (platform == "ios") {
+            if (platform == 'ios') {
                 promise = promise.then(function() { return _createIpa(projectPath, args); });
             } else {
-                console.log("Platform " + platform + " does not require a separate package step.");
+                console.log('Platform ' + platform + ' does not require a separate package step.');
             }
         });
         
@@ -110,26 +110,26 @@ function packageProject(cordovaPlatforms, args, /* optional */ projectPath) {
 // Find the .app folder and use exec to call xcrun with the appropriate set of args
 function _createIpa(projectPath, args) {
     
-    return tu.getInstalledPlatformVersion(projectPath, "ios").then(function(version) {        
-        if(semver.lt(version, "3.9.0")) {
+    return tu.getInstalledPlatformVersion(projectPath, 'ios').then(function(version) {        
+        if(semver.lt(version, '3.9.0')) {
             var deferred = Q.defer();
-            glob(projectPath + "/platforms/ios/build/device/*.app", function (err, matches) {
+            glob(projectPath + '/platforms/ios/build/device/*.app', function (err, matches) {
                 if (err) {
                     deferred.reject(err);
                 } else {
                     if (matches.length != 1) {
-                        console.warn( "Skipping packaging. Expected one device .app - found " + matches.length);
+                        console.warn( 'Skipping packaging. Expected one device .app - found ' + matches.length);
                     } else {
-                        var cmdString = "xcrun -sdk iphoneos PackageApplication \"" + matches[0] + "\" -o \"" +
-                            path.join(path.dirname(matches[0]), path.basename(matches[0], ".app")) + ".ipa\" ";
+                        var cmdString = 'xcrun -sdk iphoneos PackageApplication \'' + matches[0] + '\' -o \'' +
+                            path.join(path.dirname(matches[0]), path.basename(matches[0], '.app')) + '.ipa\' ';
                         
                         // Add additional command line args passed 
-                        var callArgs = tu.getCallArgs("ios", args);
+                        var callArgs = tu.getCallArgs('ios', args);
                         callArgs.options.forEach(function (arg) {
-                            cmdString += " " + arg;
+                            cmdString += ' ' + arg;
                         });
         
-                        console.log("Exec: " + cmdString);
+                        console.log('Exec: ' + cmdString);
                         return exec(cmdString)
                             .then(tu.handleExecReturn)
                             .fail(function(err) {
@@ -144,7 +144,7 @@ function _createIpa(projectPath, args) {
             
             return deferred.promise;
         } else {
-            console.log("Skipping packaging. Detected cordova-ios verison that auto-creates ipa.");
+            console.log('Skipping packaging. Detected cordova-ios verison that auto-creates ipa.');
         }
     });
 }
