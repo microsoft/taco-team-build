@@ -16,8 +16,8 @@ var fs = require('fs'),
 var defaultConfig = {
         projectPath: process.cwd(),
         addSupportPlugin: true,
-        cordovaPackageName: tc.CORDOVA,
-        cordovaVersion: undefined
+        nodePackageName: tc.CORDOVA,
+        moduleVersion: undefined
     };
 
 // Method to set options
@@ -31,12 +31,12 @@ function setupCordova(cfg) {
     cfg = tu.parseConfig(cfg, defaultConfig);
 
     // Check if Cordova already loaded
-    var cdv = tc.getLoadedModule(cfg.cordovaVersion);
+    var cdv = tc.getLoadedModule(cfg.moduleVersion);
     if(cdv) return Q(cdv);        
 
     return tc.cacheModule(cfg).then(function(result) {
         process.chdir(cfg.projectPath);
-        cfg.cordovaVersion = result.version;
+        cfg.moduleVersion = result.version;
         return tc.loadModule(result.path, 
             cfg.projectPath, 
             cfg.addSupportPlugin);
@@ -65,6 +65,7 @@ function buildProject(cordovaPlatforms, args, /* optional */ projectPath) {
                 return cordova.raw.build(callArgs);
             });
         });
+        
         return promise;
     });
 }
@@ -79,6 +80,7 @@ function _addPlatformsToProject(cordovaPlatforms, projectPath, cordova) {
             console.log("Platform " + platform + " already added.");
         }
     });
+    
     return promise;
 }
 
@@ -100,6 +102,7 @@ function packageProject(cordovaPlatforms, args, /* optional */ projectPath) {
                 console.log("Platform " + platform + " does not require a separate package step.");
             }
         });
+        
         return promise;
     });
 }
@@ -138,6 +141,7 @@ function _createIpa(projectPath, args) {
                     }
                 }
             });
+            
             return deferred.promise;
         } else {
             console.log("Skipping packaging. Detected cordova-ios verison that auto-creates ipa.");
