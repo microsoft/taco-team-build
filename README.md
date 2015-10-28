@@ -1,7 +1,5 @@
 Visual Studio Tools for Apache Cordova (TACo) Team Build Helper Node Module
 ===============
-**Note: This node module is intended for use with the Cordova CLI or Visual Studio 2015 and is not an offically supported Microsoft product. It does not work with Visual Studio 2013 CTPs.**
-
 License: MIT
 
 taco-team-build is a sample node module designed to avoid common pitfalls when building Cordova apps in a Team or Continuous Integration (CI) environment. It was put together for a set of tutorials for the [Visual Studio 2015 Tools for Apache Cordova](http://aka.ms/cordova) (TACo) featureset in Visual Studio but can be used with standard cordova projects.
@@ -12,7 +10,7 @@ Specifically it helps with the following challenges:
 2.  Allowing developers to specify a location to store versions of Cordova, its plugins, and platforms outside of a user's home directory (useful in CI environments where a system user may run the build) 
 3.  Generating an ipa for iOS
 4.  Automated detection of whether a platform should be added avoid a non-zero exit code for incremental builds (the default CLI behavior)
-5.  Removing plugins/android.json, plugins/ios.json, plugins/windows.json, or plugins/wp8.json files [which can cause strange results if present](https://github.com/Microsoft/cordova-docs/tree/master/tips-and-workarounds/general#missingexclude) when adding a platform. (Though files are not removed if the Cordova platforms folder was added to source control.)
+5.  Removing plugins/android.json, plugins/ios.json, plugins/windows.json, or plugins/wp8.json files [which can cause strange results if present](http://go.microsoft.com/fwlink/?LinkID=691927) when adding a platform. (Though files are not removed if the Cordova platforms folder was added to source control.)
 6.  Fixes for problems with symlinks and execute bits being lost when a plugin or platform is added to source control from Windows (via a plugin)
 7.  Supporting Visual Studio 2015's res/native and Windows packaging features and some bug fixes (via a plugin)
 
@@ -116,7 +114,7 @@ Supported platforms: ios
 
 Runs any post-build packaging steps required for the specified platforms. The method returns a promise that is fulfilled once packaging is completed. Passed in **platforms** can be an array of platforms or a single platform string. Passed in **args** can be an array of arguments or an object with an array of arguments per platform name.
 
-**Note:** The android, windows, and wp8 platforms automatically package on build and you can place the appropriate files for signing under res/native/android or res/native/windows. See [MSDN documentation](https://msdn.microsoft.com/en-us/library/dn757048(v=vs.140).aspx) for details.
+**Note:** The android, windows, and wp8 platforms automatically package on build and you can place the appropriate files for signing under res/native/android or res/native/windows. See [MSDN documentation](http://go.microsoft.com/fwlink/?LinkID=613702) for details.
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 var build = require('taco-team-build');
