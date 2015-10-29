@@ -12,6 +12,10 @@ var fs = require('fs'),
     tc = require('./lib/ttb-cache.js'),
     exec = Q.nfbind(require('child_process').exec);
 
+// Constants
+var SUPPORT_PLUGIN_PATH = path.resolve(__dirname, 'cordova-plugin-vs-taco-support'),
+    SUPPORT_PLUGIN_ID = 'cordova-plugin-vs-taco-support';
+
 // Global vars
 var defaultConfig = {
         projectPath: process.cwd(),
@@ -29,17 +33,53 @@ function configure(cfg) {
 // Also installs support plugin if not already in the project
 function setupCordova(cfg) {
     cfg = tu.parseConfig(cfg, defaultConfig);
-
+    
     // Check if Cordova already loaded
-    var cdv = tc.getLoadedModule(cfg.moduleVersion);
-    if(cdv) return Q(cdv);        
+    var cdv = tc.getLoadedModule(cfg);
+    if(cdv) return Q(cdv);
 
     return tc.cacheModule(cfg).then(function(result) {
+            process.chdir(cfg.projectPath);
+            cfg.moduleVersion = result.version;
+            return tc.loadModule(result.path);
+        });
+}
+
+function addSupportPluginIfRequested(cachedModule, cfg) {
+    if (cachedModule.cordova) {
+        cachedModule = cachedModule.cordova;
+    }
+    
+    // Unless the user very specifically asked to not get it, we should add the support plugin
+    var addSupportPlugin = cfg.addSupportPlugin !== false;
+    if (addSupportPlugin && cfg.projectPath && !tu.fileExistsSync(path.join(cfg.projectPath, 'plugins', SUPPORT_PLUGIN_ID))) {
         process.chdir(cfg.projectPath);
-        cfg.moduleVersion = result.version;
-        return tc.loadModule(result.path, 
-            cfg.projectPath, 
-            cfg.addSupportPlugin);
+        console.log('Adding support plugin.');
+        return cachedModule.raw.plugin('add', SUPPORT_PLUGIN_PATH).then(function () { return cachedModule; });
+    }
+    
+    return Q(cachedModule);
+}
+
+// It's possible that checking in the platforms folder on Windows and then checking out and building
+// the project on OSX can cause the eXecution bit on the platform version files to be cleared,
+// resulting in errors when performing project operations. This method restores it if needed.
+function applyExecutionBitFix(platforms) {
+    // Only bother if we're on OSX and are after platform add for iOS itself (still need to run for other platforms)
+    if (process.platform !=="darwin") {
+        return;
+    }
+
+    // Generate the script to set execute bits for installed platforms
+    var script ="";
+    platforms.forEach(function(platform) {
+        script += "find -E platforms/" + platform + "/cordova -type f -regex \"[^.(LICENSE)]*\" -exec chmod +x {} +\n"
+    });
+    
+    // Run script
+    return exec(script, function(err, stderr, stdout) {
+        if(stderr) console.error(stderr);
+        if(stdout) console.log(stdout);
     });
 }
 
@@ -53,7 +93,11 @@ function buildProject(cordovaPlatforms, args, /* optional */ projectPath) {
         projectPath = defaultConfig.projectPath;
     }
 
-    return setupCordova().then(function (cordova) {
+    return setupCordova().then(function(cordova) {
+            return applyExecutionBitFix(cordovaPlatforms).then(function() { return Q(cordova); });
+        }).then(function(cordova) {
+            return addSupportPluginIfRequested(cordova, defaultConfig);
+        }).then(function (cordova) {
         // Add platforms if not done already
         var promise = _addPlatformsToProject(cordovaPlatforms, projectPath, cordova);
         //Build each platform with args in args object
@@ -74,7 +118,7 @@ function buildProject(cordovaPlatforms, args, /* optional */ projectPath) {
 function _addPlatformsToProject(cordovaPlatforms, projectPath, cordova) {
     var promise = Q();
     cordovaPlatforms.forEach(function (platform) {
-        if (!fs.existsSync(path.join(projectPath, 'platforms', platform))) {
+        if (!tu.fileExistsSync(path.join(projectPath, 'platforms', platform))) {
             promise = promise.then(function () { return cordova.raw.platform('add', platform); });
         } else {
             console.log('Platform ' + platform + ' already added.');
