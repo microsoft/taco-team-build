@@ -33,17 +33,15 @@ function configure(cfg) {
 // Also installs support plugin if not already in the project
 function setupCordova(cfg) {
     cfg = tu.parseConfig(cfg, defaultConfig);
-
+    
     // Check if Cordova already loaded
     var cdv = tc.getLoadedModule(cfg);
-    if(cdv) return Q(cdv);        
+    if(cdv) return Q(cdv);
 
     return tc.cacheModule(cfg).then(function(result) {
             process.chdir(cfg.projectPath);
             cfg.moduleVersion = result.version;
             return tc.loadModule(result.path);
-        }).then(function(cachedModule) {
-            return addSupportPluginIfRequested(cachedModule, cfg);
         });
 }
 
@@ -63,6 +61,28 @@ function addSupportPluginIfRequested(cachedModule, cfg) {
     return Q(cachedModule);
 }
 
+// It's possible that checking in the platforms folder on Windows and then checking out and building
+// the project on OSX can cause the eXecution bit on the platform version files to be cleared,
+// resulting in errors when performing project operations. This method restores it if needed.
+function applyExecutionBitFix(platforms) {
+    // Only bother if we're on OSX and are after platform add for iOS itself (still need to run for other platforms)
+    if (process.platform !=="darwin") {
+        return;
+    }
+
+    // Generate the script to set execute bits for installed platforms
+    var script ="";
+    platforms.forEach(function(platform) {
+        script += "find -E platforms/" + platform + "/cordova -type f -regex \"[^.(LICENSE)]*\" -exec chmod +x {} +\n"
+    });
+    
+    // Run script
+    return exec(script, function(err, stderr, stdout) {
+        if(stderr) console.error(stderr);
+        if(stdout) console.log(stdout);
+    });
+}
+
 // Main build method
 function buildProject(cordovaPlatforms, args, /* optional */ projectPath) {
     if (typeof (cordovaPlatforms) == 'string') {
@@ -73,7 +93,11 @@ function buildProject(cordovaPlatforms, args, /* optional */ projectPath) {
         projectPath = defaultConfig.projectPath;
     }
 
-    return setupCordova().then(function (cordova) {
+    return setupCordova().then(function(cordova) {
+            return applyExecutionBitFix(cordovaPlatforms).then(function() { return Q(cordova); });
+        }).then(function(cordova) {
+            return addSupportPluginIfRequested(cordova, defaultConfig);
+        }).then(function (cordova) {
         // Add platforms if not done already
         var promise = _addPlatformsToProject(cordovaPlatforms, projectPath, cordova);
         //Build each platform with args in args object
