@@ -67,7 +67,7 @@ function addSupportPluginIfRequested(cachedModule, cfg) {
 function applyExecutionBitFix(platforms) {
     // Only bother if we're on OSX and are after platform add for iOS itself (still need to run for other platforms)
     if (process.platform !=="darwin") {
-        return;
+        return Q();
     }
 
     // Generate the script to set execute bits for installed platforms
@@ -93,7 +93,19 @@ function buildProject(cordovaPlatforms, args, /* optional */ projectPath) {
         projectPath = defaultConfig.projectPath;
     }
 
-    return setupCordova().then(function(cordova) {
+    var appendedVersion = tc.getModuleVersionFromConfig(defaultConfig);
+    if (appendedVersion) {
+        appendedVersion = '@' + appendedVersion;
+    } else {
+        appendedVersion = '';
+    }
+    
+    return tu.isCompatibleNpmPackage(defaultConfig.nodePackageName + appendedVersion).then(function (isCompatible) {
+            if (isCompatible === false) {
+                throw new Error('Build failed due to incompatible npm version');
+            }
+            return setupCordova();
+        }).then(function(cordova) {
             return applyExecutionBitFix(cordovaPlatforms).then(function() { return Q(cordova); });
         }).then(function(cordova) {
             return addSupportPluginIfRequested(cordova, defaultConfig);
