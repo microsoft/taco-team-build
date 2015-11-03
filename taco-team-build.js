@@ -100,10 +100,14 @@ function buildProject(cordovaPlatforms, args, /* optional */ projectPath) {
         appendedVersion = '';
     }
     
-    return tu.isCompatibleNpmPackage(defaultConfig.nodePackageName + appendedVersion).then(function (isCompatible) {
-            if (isCompatible === false) {
-                throw new Error('Build failed due to incompatible npm version');
+    return tu.isCompatibleNpmPackage(defaultConfig.nodePackageName + appendedVersion).then(function (compatibilityResult) {
+            switch (compatibilityResult) {
+                case tu.NodeCompatibilityResult.IncompatibleVersion4Ios:
+                    throw new Error('This Cordova version does not support Node.js 4.0.0 for iOS builds. Either downgrade to an earlier version of Node.js or move to Cordova 5.3.3 or later. See http://go.microsoft.com/fwlink/?LinkID=618471');
+                case tu.NodeCompatibilityResult.IncompatibleVersion5:
+                    throw new Error('This Cordova version does not support Node.js 5.0.0 or later. Either downgrade to an earlier version of Node.js or move to Cordova <TBD VERSION> or later. See http://go.microsoft.com/fwlink/?LinkID=618471');
             }
+            
             return setupCordova();
         }).then(function(cordova) {
             return applyExecutionBitFix(cordovaPlatforms).then(function() { return Q(cordova); });
