@@ -25,35 +25,35 @@ var defaultConfig = {
     };
 
 // Method to set options
-function configure(cfg) {
-    defaultConfig = utilities.parseConfig(cfg, defaultConfig);
+function configure(config) {
+    defaultConfig = utilities.parseConfig(config, defaultConfig);
 }
 
 // Gets and/or downloads the appropriate cordova node module for use based on options or taco.json
 // Also installs support plugin if not already in the project
-function setupCordova(cfg) {
-    cfg = utilities.parseConfig(cfg, defaultConfig);
+function setupCordova(config) {
+    config = utilities.parseConfig(config, defaultConfig);
     
     // Check if Cordova already loaded
-    var cdv = cache.getLoadedModule(cfg);
+    var cdv = cache.getLoadedModule(config);
     if(cdv) return Q(cdv);
 
-    return cache.cacheModule(cfg).then(function(result) {
-            process.chdir(cfg.projectPath);
-            cfg.moduleVersion = result.version;
+    return cache.cacheModule(config).then(function(result) {
+            process.chdir(config.projectPath);
+            config.moduleVersion = result.version;
             return cache.loadModule(result.path);
         });
 }
 
-function addSupportPluginIfRequested(cachedModule, cfg) {
+function addSupportPluginIfRequested(cachedModule, config) {
     if (cachedModule.cordova) {
         cachedModule = cachedModule.cordova;
     }
     
     // Unless the user very specifically asked to not get it, we should add the support plugin
-    var addSupportPlugin = cfg.addSupportPlugin !== false;
-    if (addSupportPlugin && cfg.projectPath && !utilities.fileExistsSync(path.join(cfg.projectPath, 'plugins', SUPPORT_PLUGIN_ID))) {
-        process.chdir(cfg.projectPath);
+    var addSupportPlugin = config.addSupportPlugin !== false;
+    if (addSupportPlugin && config.projectPath && !utilities.fileExistsSync(path.join(config.projectPath, 'plugins', SUPPORT_PLUGIN_ID))) {
+        process.chdir(config.projectPath);
         console.log('Adding support plugin.');
         return cachedModule.raw.plugin('add', SUPPORT_PLUGIN_PATH).then(function () { return cachedModule; });
     }
@@ -217,8 +217,8 @@ module.exports = {
     packageProject: packageProject,
     getInstalledPlatformVersion: utilities.getInstalledPlatformVersion,
     getVersionForNpmPackage: utilities.getVersionForNpmPackage,
-    cacheModule: function(cfg) {
-        cfg = utilities.parseConfig(cfg, defaultConfig);
-        return cache.cacheModule(cfg);
+    cacheModule: function(config) {
+        config = utilities.parseConfig(config, defaultConfig);
+        return cache.cacheModule(config);
     }
 };
