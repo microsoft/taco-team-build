@@ -73,14 +73,15 @@ function applyExecutionBitFix(platforms) {
     // Generate the script to set execute bits for installed platforms
     var script ="";
     platforms.forEach(function(platform) {
-        script += "find -E platforms/" + platform + "/cordova -type f -regex \"[^.(LICENSE)]*\" -exec chmod +x {} +\n"
+        var platformCordovaDir = "platforms/" + platform + "/cordova";
+        
+        if (tu.fileExistsSync(platformCordovaDir)) {
+            script += "find -E " + platformCordovaDir + " -type f -regex \"[^.(LICENSE)]*\" -exec chmod +x {} +\n"
+        }
     });
     
     // Run script
-    return exec(script, function(err, stderr, stdout) {
-        if(stderr) console.error(stderr);
-        if(stdout) console.log(stdout);
-    });
+    return exec(script);
 }
 
 // Main build method
@@ -110,7 +111,11 @@ function buildProject(cordovaPlatforms, args, /* optional */ projectPath) {
             
             return setupCordova();
         }).then(function(cordova) {
-            return applyExecutionBitFix(cordovaPlatforms).then(function() { return Q(cordova); });
+            return applyExecutionBitFix(cordovaPlatforms).then(function() {
+                return Q(cordova);
+             }, function(err) {
+                 return Q(cordova);
+             });
         }).then(function(cordova) {
             return addSupportPluginIfRequested(cordova, defaultConfig);
         }).then(function (cordova) {
