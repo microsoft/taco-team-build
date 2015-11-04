@@ -8,8 +8,8 @@ var fs = require('fs'),
     Q = require('q'),
     glob = require('glob'),
     semver = require('semver'),
-    tu = require('./lib/ttb-util.js'),
-    tc = require('./lib/ttb-cache.js'),
+    utilities = require('./lib/ttb-util.js'),
+    cache = require('./lib/ttb-cache.js'),
     exec = Q.nfbind(require('child_process').exec);
 
 // Constants
@@ -20,28 +20,28 @@ var SUPPORT_PLUGIN_PATH = path.resolve(__dirname, 'cordova-plugin-vs-taco-suppor
 var defaultConfig = {
         projectPath: process.cwd(),
         addSupportPlugin: true,
-        nodePackageName: tc.CORDOVA,
+        nodePackageName: cache.CORDOVA,
         moduleVersion: undefined
     };
 
 // Method to set options
 function configure(cfg) {
-    defaultConfig = tu.parseConfig(cfg, defaultConfig);
+    defaultConfig = utilities.parseConfig(cfg, defaultConfig);
 }
 
 // Gets and/or downloads the appropriate cordova node module for use based on options or taco.json
 // Also installs support plugin if not already in the project
 function setupCordova(cfg) {
-    cfg = tu.parseConfig(cfg, defaultConfig);
+    cfg = utilities.parseConfig(cfg, defaultConfig);
     
     // Check if Cordova already loaded
-    var cdv = tc.getLoadedModule(cfg);
+    var cdv = cache.getLoadedModule(cfg);
     if(cdv) return Q(cdv);
 
-    return tc.cacheModule(cfg).then(function(result) {
+    return cache.cacheModule(cfg).then(function(result) {
             process.chdir(cfg.projectPath);
             cfg.moduleVersion = result.version;
-            return tc.loadModule(result.path);
+            return cache.loadModule(result.path);
         });
 }
 
@@ -52,7 +52,7 @@ function addSupportPluginIfRequested(cachedModule, cfg) {
     
     // Unless the user very specifically asked to not get it, we should add the support plugin
     var addSupportPlugin = cfg.addSupportPlugin !== false;
-    if (addSupportPlugin && cfg.projectPath && !tu.fileExistsSync(path.join(cfg.projectPath, 'plugins', SUPPORT_PLUGIN_ID))) {
+    if (addSupportPlugin && cfg.projectPath && !utilities.fileExistsSync(path.join(cfg.projectPath, 'plugins', SUPPORT_PLUGIN_ID))) {
         process.chdir(cfg.projectPath);
         console.log('Adding support plugin.');
         return cachedModule.raw.plugin('add', SUPPORT_PLUGIN_PATH).then(function () { return cachedModule; });
@@ -93,18 +93,18 @@ function buildProject(cordovaPlatforms, args, /* optional */ projectPath) {
         projectPath = defaultConfig.projectPath;
     }
 
-    var appendedVersion = tc.getModuleVersionFromConfig(defaultConfig);
+    var appendedVersion = cache.getModuleVersionFromConfig(defaultConfig);
     if (appendedVersion) {
         appendedVersion = '@' + appendedVersion;
     } else {
         appendedVersion = '';
     }
     
-    return tu.isCompatibleNpmPackage(defaultConfig.nodePackageName + appendedVersion).then(function (compatibilityResult) {
+    return utilities.isCompatibleNpmPackage(defaultConfig.nodePackageName + appendedVersion).then(function (compatibilityResult) {
             switch (compatibilityResult) {
-                case tu.NodeCompatibilityResult.IncompatibleVersion4Ios:
+                case utilities.NodeCompatibilityResult.IncompatibleVersion4Ios:
                     throw new Error('This Cordova version does not support Node.js 4.0.0 for iOS builds. Either downgrade to an earlier version of Node.js or move to Cordova 5.3.3 or later. See http://go.microsoft.com/fwlink/?LinkID=618471');
-                case tu.NodeCompatibilityResult.IncompatibleVersion5:
+                case utilities.NodeCompatibilityResult.IncompatibleVersion5:
                     throw new Error('This Cordova version does not support Node.js 5.0.0 or later. Either downgrade to an earlier version of Node.js or move to Cordova <TBD VERSION> or later. See http://go.microsoft.com/fwlink/?LinkID=618471');
             }
             
@@ -120,7 +120,7 @@ function buildProject(cordovaPlatforms, args, /* optional */ projectPath) {
         cordovaPlatforms.forEach(function (platform) {
             promise = promise.then(function () {
                 // Build app with platform specific args if specified
-                var callArgs = tu.getCallArgs(platform, args);
+                var callArgs = utilities.getCallArgs(platform, args);
                 console.log('Queueing build for platform ' + platform + ' w/options: ' + callArgs.options || 'none');
                 return cordova.raw.build(callArgs);
             });
@@ -134,7 +134,7 @@ function buildProject(cordovaPlatforms, args, /* optional */ projectPath) {
 function _addPlatformsToProject(cordovaPlatforms, projectPath, cordova) {
     var promise = Q();
     cordovaPlatforms.forEach(function (platform) {
-        if (!tu.fileExistsSync(path.join(projectPath, 'platforms', platform))) {
+        if (!utilities.fileExistsSync(path.join(projectPath, 'platforms', platform))) {
             promise = promise.then(function () { return cordova.raw.platform('add', platform); });
         } else {
             console.log('Platform ' + platform + ' already added.');
@@ -170,7 +170,7 @@ function packageProject(cordovaPlatforms, args, /* optional */ projectPath) {
 // Find the .app folder and use exec to call xcrun with the appropriate set of args
 function _createIpa(projectPath, args) {
     
-    return tu.getInstalledPlatformVersion(projectPath, 'ios').then(function(version) {        
+    return utilities.getInstalledPlatformVersion(projectPath, 'ios').then(function(version) {        
         if(semver.lt(version, '3.9.0')) {
             var deferred = Q.defer();
             glob(projectPath + '/platforms/ios/build/device/*.app', function (err, matches) {
@@ -184,14 +184,14 @@ function _createIpa(projectPath, args) {
                             path.join(path.dirname(matches[0]), path.basename(matches[0], '.app')) + '.ipa\' ';
                         
                         // Add additional command line args passed 
-                        var callArgs = tu.getCallArgs('ios', args);
+                        var callArgs = utilities.getCallArgs('ios', args);
                         callArgs.options.forEach(function (arg) {
                             cmdString += ' ' + arg;
                         });
         
                         console.log('Exec: ' + cmdString);
                         return exec(cmdString)
-                            .then(tu.handleExecReturn)
+                            .then(utilities.handleExecReturn)
                             .fail(function(err) {
                                 deferred.reject(err);
                             })
@@ -215,10 +215,10 @@ module.exports = {
     setupCordova: setupCordova,
     buildProject: buildProject,
     packageProject: packageProject,
-    getInstalledPlatformVersion: tu.getInstalledPlatformVersion,
-    getVersionForNpmPackage: tu.getVersionForNpmPackage,
+    getInstalledPlatformVersion: utilities.getInstalledPlatformVersion,
+    getVersionForNpmPackage: utilities.getVersionForNpmPackage,
     cacheModule: function(cfg) {
-        cfg = tu.parseConfig(cfg, defaultConfig);
-        return tc.cacheModule(cfg);
+        cfg = utilities.parseConfig(cfg, defaultConfig);
+        return cache.cacheModule(cfg);
     }
 };
