@@ -222,6 +222,10 @@ module.exports = {
     packageProject: packageProject,
     getInstalledPlatformVersion: tu.getInstalledPlatformVersion,
     getVersionForNpmPackage: tu.getVersionForNpmPackage,
+    getNpmVersionFromConfig: function(cfg) {
+        var version = tc.getModuleVersionFromConfig(cfg);
+        return tu.getVersionForNpmPackage(cfg.nodePackageName + (version ? ('@' + version) : ''));
+    },
     cacheModule: function(cfg) {
         cfg = tu.parseConfig(cfg, defaultConfig);
         return tc.cacheModule(cfg);
