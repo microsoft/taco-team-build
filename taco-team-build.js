@@ -75,7 +75,7 @@ function applyExecutionBitFix(platforms) {
     platforms.forEach(function(platform) {
         var platformCordovaDir = "platforms/" + platform + "/cordova";
         
-        if (tu.fileExistsSync(platformCordovaDir)) {
+        if (utilities.fileExistsSync(platformCordovaDir)) {
             script += "find -E " + platformCordovaDir + " -type f -regex \"[^.(LICENSE)]*\" -exec chmod +x {} +\n"
         }
     });
