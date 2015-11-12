@@ -2,7 +2,7 @@ Visual Studio Tools for Apache Cordova (TACo) Team Build Helper Node Module
 ===============
 License: MIT
 
-taco-team-build is a sample node module designed to avoid common pitfalls when building Cordova apps in a Team or Continuous Integration (CI) environment. It was put together for a set of tutorials for the [Visual Studio 2015 Tools for Apache Cordova](http://aka.ms/cordova) (TACo) featureset in Visual Studio but can be used with standard cordova projects.
+taco-team-build is a node module designed to avoid common pitfalls when building Cordova apps in a Team or Continuous Integration (CI) environment. It was put together for a set of tutorials for the [Visual Studio 2015 Tools for Apache Cordova](http://aka.ms/cordova) (TACo) feature set in Visual Studio but can be used with standard Cordova projects.
 
 Specifically it helps with the following challenges:
 
@@ -68,7 +68,7 @@ build.configure({
 ### setupCordova(config)
 Downloads and installs the correct version of Cordova in the appropriate cache location.  See the configure method for defaults.  setupCordova() should always be called before executing a platform specific command. 
 
-You can also pass in the same **config** object as the configure method to set configuration options before initalization.
+You can also pass in the same **config** object as the configure method to set configuration options before initialization.
 
 The method returns a promise that is fulfilled with the appropriate cordova-lib node module once setup is completed.  Once setup has completed, you can use value from the promise to access a number of Cordova CLI functions in JavaScript. Ex:
 
@@ -105,7 +105,7 @@ var build = require('taco-team-build'),
 build.buildProject(platforms, args).done();
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-**WARNING**: Unlike the Cordova CLI, you should not use the "double-double dash" when referencing platform specific argumetns. Ex: Use "--ant" not "-- --ant" for Android.
+**WARNING**: Unlike the Cordova CLI, you should not use the "double-double dash" when referencing platform specific arguments. Ex: Use "--ant" not "-- --ant" for Android.
 
 Not only will your flag not be picked up but older versions of the Cordova Android platform will error out if you specify unrecognized flags with a "TypeError: Cannot call method 'prepEnv' of undefined" error.  (This particular error is fixed Cordova 4.3.0 but your flags will still be ignored.)
 
