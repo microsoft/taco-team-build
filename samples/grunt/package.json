@@ -2,6 +2,6 @@
   "devDependencies": {
     "grunt": "latest",
     "grunt-typescript": "latest",
-    "taco-team-build": "http://aka.ms/tacoteambuild-rel"
+    "taco-team-build": "latest"
   }
 }
