@@ -13,7 +13,8 @@ var fs = require('fs'),
     exec = Q.nfbind(require('child_process').exec);
 
 // Constants
-var SUPPORT_PLUGIN_ID = 'cordova-plugin-vs-taco-support';
+var SUPPORT_PLUGIN_ID = 'cordova-plugin-vs-taco-support',
+    SUPPORT_PLUGIN_GIT_URL = 'https://github.com/Microsoft/cordova-plugin-vs-taco-support.git';
 
 // Global vars
 var defaultConfig = {
@@ -54,10 +55,24 @@ function addSupportPluginIfRequested(cachedModule, config) {
     if (addSupportPlugin && config.projectPath && !utilities.fileExistsSync(path.join(config.projectPath, 'plugins', SUPPORT_PLUGIN_ID))) {
         process.chdir(config.projectPath);
         console.log('Adding support plugin.');
-        return cachedModule.raw.plugin('add', SUPPORT_PLUGIN_ID).then(function () { return cachedModule; });
+        
+        return getNpmVersionFromConfig(config).then(function(effectiveVersion) {
+            var pluginTarget = SUPPORT_PLUGIN_ID;
+            if (semver.valid(effectiveVersion) && semver.lt(effectiveVersion, '5.0.0')) {
+                // Older versions can't install from npm, so install via git
+                pluginTarget = SUPPORT_PLUGIN_GIT_URL;
+            }
+            
+            return cachedModule.raw.plugin('add', pluginTarget).then(function () { return cachedModule; });            
+        });
     }
     
     return Q(cachedModule);
+}
+
+function getNpmVersionFromConfig(config) {
+    var version = cache.getModuleVersionFromConfig(config);
+    return utilities.getVersionForNpmPackage(config.nodePackageName + (version ? ('@' + version) : ''));    
 }
 
 // It's possible that checking in the platforms folder on Windows and then checking out and building
@@ -220,10 +235,8 @@ module.exports = {
     buildProject: buildProject,
     packageProject: packageProject,
     getInstalledPlatformVersion: utilities.getInstalledPlatformVersion,
-    getVersionForNpmPackage: function(config) {
-        var version = cache.getModuleVersionFromConfig(config);
-        return utilities.getVersionForNpmPackage(config.nodePackageName + (version ? ('@' + version) : ''));
-    },
+    getVersionForNpmPackage: utilities.getVersionForNpmPackage,
+    getNpmVersionFromConfig: getNpmVersionFromConfig,
     cacheModule: function(config) {
         config = utilities.parseConfig(config, defaultConfig);
         return cache.cacheModule(config);
