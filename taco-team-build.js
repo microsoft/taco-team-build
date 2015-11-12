@@ -13,8 +13,7 @@ var fs = require('fs'),
     exec = Q.nfbind(require('child_process').exec);
 
 // Constants
-var SUPPORT_PLUGIN_PATH = path.resolve(__dirname, 'cordova-plugin-vs-taco-support'),
-    SUPPORT_PLUGIN_ID = 'cordova-plugin-vs-taco-support';
+var SUPPORT_PLUGIN_ID = 'cordova-plugin-vs-taco-support';
 
 // Global vars
 var defaultConfig = {
@@ -55,7 +54,7 @@ function addSupportPluginIfRequested(cachedModule, config) {
     if (addSupportPlugin && config.projectPath && !utilities.fileExistsSync(path.join(config.projectPath, 'plugins', SUPPORT_PLUGIN_ID))) {
         process.chdir(config.projectPath);
         console.log('Adding support plugin.');
-        return cachedModule.raw.plugin('add', SUPPORT_PLUGIN_PATH).then(function () { return cachedModule; });
+        return cachedModule.raw.plugin('add', SUPPORT_PLUGIN_ID).then(function () { return cachedModule; });
     }
     
     return Q(cachedModule);
