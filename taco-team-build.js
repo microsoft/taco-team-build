@@ -90,7 +90,9 @@ function applyExecutionBitFix(platforms) {
         var platformCordovaDir = "platforms/" + platform + "/cordova";
         
         if (utilities.fileExistsSync(platformCordovaDir)) {
-            script += "find -E " + platformCordovaDir + " -type f -regex \"[^.(LICENSE)]*\" -exec chmod +x {} +\n"
+            // Disable -E flag for non-OSX platforms
+            var regex_flag = process.platform == 'darwin' ? '-E' : '';
+            script += "find " + regex_flag + " " + platformCordovaDir + " -type f -regex \"[^.(LICENSE)]*\" -exec chmod +x {} +\n"
         }
     });
     
