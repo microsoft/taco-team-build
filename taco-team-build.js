@@ -115,6 +115,7 @@ function buildProject(cordovaPlatforms, args, /* optional */ projectPath) {
         appendedVersion = '';
     }
     
+    var cordovaVersion = defaultConfig.moduleVersion;
     return utilities.isCompatibleNpmPackage(defaultConfig.nodePackageName + appendedVersion).then(function (compatibilityResult) {
             switch (compatibilityResult) {
                 case utilities.NodeCompatibilityResult.IncompatibleVersion4Ios:
@@ -123,6 +124,9 @@ function buildProject(cordovaPlatforms, args, /* optional */ projectPath) {
                     throw new Error('This Cordova version does not support Node.js 5.0.0 or later. Either downgrade to an earlier version of Node.js or move to Cordova 5.4.0 or later. See http://go.microsoft.com/fwlink/?LinkID=618471');
             }
             
+            return utilities.getVersionForNpmPackage(defaultConfig.nodePackageName + appendedVersion);
+        }).then(function(version){
+            cordovaVersion = version;
             return setupCordova();
         }).then(function(cordova) {
             return applyExecutionBitFix(cordovaPlatforms).then(function() {
@@ -139,14 +143,23 @@ function buildProject(cordovaPlatforms, args, /* optional */ projectPath) {
         cordovaPlatforms.forEach(function (platform) {
             promise = promise.then(function () {
                 // Build app with platform specific args if specified
-                var callArgs = utilities.getCallArgs(platform, args);
-                console.log('Queueing build for platform ' + platform + ' w/options: ' + callArgs.options || 'none');
+                var callArgs = utilities.getCallArgs(platform, args, cordovaVersion);
+                var argsString = _getArgsString(args.options);
+                console.log('Queueing build for platform ' + platform + ' w/options: ' + argsString);
                 return cordova.raw.build(callArgs);
             });
         });
         
         return promise;
     });
+}
+
+function _getArgsString(options) {
+    if (!options) {
+        return 'none';
+    }
+    
+    return options.argv || options;
 }
 
 // Prep for build by adding platforms and setting environment variables
