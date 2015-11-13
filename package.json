@@ -3,6 +3,9 @@
   "version": "0.2.0",
   "description": "taco-team-build is a node module designed to avoid common pitfalls when building Cordova apps in a Team or Continuous Integration environment. It was put together for a set of tutorials for the Visual Studio 2015 Tools for Apache Cordova (TACo) featureset in Visual Studio but can be used with standard cordova projects.",
   "author": "Microsoft <vscordovatools@microsoft.com>",
+  "contributors": [
+    "Akshaya Kumar Sharma <akshayakrsh@gmail.com> (http://www.lordakshaya.com)"
+  ],
   "main": "taco-team-build.js",
   "repository": {
     "type": "git",
