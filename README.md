@@ -1,25 +1,26 @@
-Visual Studio Tools for Apache Cordova (TACo) Team Build Helper Node Module
+Cordova Continuous Integration (CI) / Team Build Helper Node Module (taco-team-build)
 ===============
 License: MIT
 
-taco-team-build is a node module designed to avoid common pitfalls when building Cordova apps in a Team or Continuous Integration (CI) environment. It was put together for a set of tutorials for the [Visual Studio 2015 Tools for Apache Cordova](http://aka.ms/cordova) (TACo) feature set in Visual Studio but can be used with standard Cordova projects.
+taco-team-build is a node module designed to avoid common pitfalls when building any Cordova-CLI compliant (ex: Cordova Ionic, PhoneGap local) Cordova apps in a Continuous Integration (CI) environment. It was originally created for a set of tutorials for the [Tools for Apache Cordova](http://aka.ms/cordova) (TACo) feature set in Visual Studio but does **not** require its use. 
 
 Specifically it helps with the following challenges:
 
 1.  Handling multiple versions of Cordova from the same build server in a performant way on Windows
 2.  Allowing developers to specify a location to store versions of Cordova, its plugins, and platforms outside of a user's home directory (useful in CI environments where a system user may run the build) 
-3.  Generating an ipa for iOS
+3.  Generating an ipa for iOS when using versions of Cordova that do not automatically generate one
 4.  Automated detection of whether a platform should be added avoid a non-zero exit code for incremental builds (the default CLI behavior)
 5.  Removing plugins/android.json, plugins/ios.json, plugins/windows.json, or plugins/wp8.json files [which can cause strange results if present](http://go.microsoft.com/fwlink/?LinkID=691927) when adding a platform. (Though files are not removed if the Cordova platforms folder was added to source control.)
 6.  Fixes for problems with symlinks and execute bits being lost when a plugin or platform is added to source control from Windows (via a plugin)
-7.  Supporting Visual Studio 2015's res/native and Windows packaging features and some bug fixes (via a plugin)
+7.  Adds in support for the res/native folder that will overlay the contents of the platforms folder so you can add files to the native project without checking native code into source control (via a plugin) - Ex: res/native/Android/AndroidManifest.xml will overwrite the default one before Cordova's "prepare" step.
+8.  Some Windows packaging features and bug fixes (via a plugin) designed for use with versions of Cordova that pre-date the Windows platform's support of build.json
 
 It is a generic node module so it can be used with any number of build systems including Gulp, Grunt, and Jake.
 
 General Settings
 ----------------
-1.  Set a **CORDOVA\_CACHE** environment variable to tell it where you want the various versions of Cordova to land.  You can also specify this using the module’s “configure” method
-2.  The Cordova Version is automatically picked up from taco.json if present but can also be specified using the module's configure method
+1. Set a **CORDOVA\_CACHE** environment variable to tell it where you want the various versions of Cordova to land.  You can also specify this using the module’s “configure” method. The TACO_HOME environment variable is also respected as a fallback. 2. The Cordova Version is automatically picked up from taco.json if present but can also be specified using the module's configure method
+3. You can also set a **CORDOVA_DEFAULT_VERSION** environment variable if no version is specified at in either taco.json or the configure method. The final fallback is the latest version of Cordova.
 
 Sample Usage
 ---------------------
@@ -44,7 +45,7 @@ Sample Usage
 Module Methods
 -------
 ### configure(config)
-Allows you to programatically configure the Cordova version to use, the location that Cordova libraries should be cached, and the project path.
+Allows you to programmatically configure the Cordova version to use, the location that Cordova libraries should be cached, and the project path.
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 var build = require('taco-team-build');
@@ -55,7 +56,7 @@ build.configure({
 }).done();
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
--   **cordovaCache** defaults to either the **CORDOVA\_CACHE** environment variable or %APPDATA%\cordova-cache on Windows and ~/.cordova-cache on OSX if no value is set for the variable. This will also automatically set CORDOVA\_HOME and PLUGMAN\_HOME to sub-folders in this same location to avoid conflicting with any global instllations you may have.
+-   **cordovaCache** defaults to either the **CORDOVA\_CACHE** environment variable or %APPDATA%\taco_home on Windows and ~/.taco_home on OSX if no value is set for the variable. This will also automatically set CORDOVA\_HOME and PLUGMAN\_HOME to sub-folders in this same location to avoid conflicting with any global instllations you may have.
 -   **projectPath** defaults to the current working directory.
 -   If the **cordovaVersion** is not set, the version will be pulled from **taco.json** if present and otherwise default to 5.1.1.  You can manually create a taco.json file if you are not using Visual Studio by including the following in the file:
 
@@ -114,7 +115,7 @@ Supported platforms: ios
 
 Runs any post-build packaging steps required for the specified platforms. The method returns a promise that is fulfilled once packaging is completed. Passed in **platforms** can be an array of platforms or a single platform string. Passed in **args** can be an array of arguments or an object with an array of arguments per platform name.
 
-**Note:** The android, windows, and wp8 platforms automatically package on build and you can place the appropriate files for signing under res/native/android or res/native/windows. See [MSDN documentation](http://go.microsoft.com/fwlink/?LinkID=613702) for details.
+**Note:** The android, windows, and wp8 platforms automatically package on build and you can place the appropriate files for signing under res/native/android or res/native/windows. See [this tutorial](http://go.microsoft.com/fwlink/?LinkID=613702) for details.
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 var build = require('taco-team-build');
@@ -132,7 +133,7 @@ iOS Arguments:
 build.packageProject("ios", ["--sign=/path/to/signing.p12" ", "--embed=/path/to/some.mobileprovision"]); 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-You can also add a custom **[build-debug.xcconfig](https://github.com/apache/cordova-ios/blob/master/bin/templates/scripts/cordova/build-debug.xcconfig)** or **[build-release.xcconfig](https://github.com/apache/cordova-ios/blob/master/bin/templates/scripts/cordova/build-release.xcconfig)** file in the **res/native/ios/cordova** folder in your project to set these and other iOS [build settings](https://developer.apple.com/library/ios/documentation/DeveloperTools/Reference/XcodeBuildSettingRef/0-Introduction/introduction.html#//apple_ref/doc/uid/TP40003931-CH1-SW1). 
+You can also add a custom **[build-debug.xcconfig](https://github.com/apache/cordova-ios/blob/master/bin/templates/scripts/cordova/build-debug.xcconfig)** or **[build-release.xcconfig](https://github.com/apache/cordova-ios/blob/master/bin/templates/scripts/cordova/build-release.xcconfig)** file in the **res/native/ios/cordova** folder in your project to set these and other iOS [build settings](https://developer.apple.com/library/ios/documentation/DeveloperTools/Reference/XcodeBuildSettingRef/0-Introduction/introduction.html#//apple_ref/doc/uid/TP40003931-CH1-SW1). Be sure to grab the version of these files from the branch appropriate for the version of Cordova you are targeting - the "master" branch may not be compatible with your version.
 
 For iOS you may need to unlock the keychain to build your app depending on your build server. You can use some variant of the following shell command to do so: 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
