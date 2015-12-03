@@ -80,7 +80,7 @@ function getNpmVersionFromConfig(config) {
 // resulting in errors when performing project operations. This method restores it if needed.
 function applyExecutionBitFix(platforms) {
     // Only bother if we're on OSX and are after platform add for iOS itself (still need to run for other platforms)
-    if (process.platform !=="darwin") {
+    if (process.platform !== "darwin" && process.platform !== 'linux') {
         return Q();
     }
 
@@ -90,12 +90,59 @@ function applyExecutionBitFix(platforms) {
         var platformCordovaDir = "platforms/" + platform + "/cordova";
         
         if (utilities.fileExistsSync(platformCordovaDir)) {
-            script += "find -E " + platformCordovaDir + " -type f -regex \"[^.(LICENSE)]*\" -exec chmod +x {} +\n"
+            // Disable -E flag for non-OSX platforms
+            var regex_flag = process.platform == 'darwin' ? '-E' : '';
+            script += "find " + regex_flag + " " + platformCordovaDir + " -type f -regex \"[^.(LICENSE)]*\" -exec chmod +x {} +\n"
         }
     });
     
     // Run script
     return exec(script);
+}
+
+// Method to prepare the platforms
+function prepareProject(cordovaPlatforms, args, /* optional */ projectPath) {
+    if (typeof (cordovaPlatforms) == "string") {
+        cordovaPlatforms = [cordovaPlatforms];
+    }
+    
+    if(!projectPath) {
+        projectPath = defaultConfig.projectPath;
+    }
+
+    var appendedVersion = cache.getModuleVersionFromConfig(defaultConfig);
+    if (appendedVersion) {
+        appendedVersion = '@' + appendedVersion;
+    } else {
+        appendedVersion = '';
+    }
+    
+    return utilities.isCompatibleNpmPackage(defaultConfig.nodePackageName + appendedVersion).then(function (compatibilityResult) {
+            switch (compatibilityResult) {
+                case utilities.NodeCompatibilityResult.IncompatibleVersion4Ios:
+                    throw new Error('This Cordova version does not support Node.js 4.0.0 for iOS builds. Either downgrade to an earlier version of Node.js or move to Cordova 5.3.3 or later. See http://go.microsoft.com/fwlink/?LinkID=618471');
+                case utilities.NodeCompatibilityResult.IncompatibleVersion5:
+                    throw new Error('This Cordova version does not support Node.js 5.0.0 or later. Either downgrade to an earlier version of Node.js or move to Cordova 5.4.0 or later. See http://go.microsoft.com/fwlink/?LinkID=618471');
+            }
+            
+            return setupCordova();
+        }).then(function(cordova) {
+            return addSupportPluginIfRequested(cordova, defaultConfig);
+        }).then(function (cordova) {
+          // Add platforms if not done already
+          var promise = _addPlatformsToProject(cordovaPlatforms, projectPath, cordova);
+          //Build each platform with args in args object
+          cordovaPlatforms.forEach(function (platform) {
+            promise = promise.then(function () {
+                // Build app with platform specific args if specified
+                var callArgs = utilities.getCallArgs(platform, args);
+                console.log('Queueing prepare for platform ' + platform + ' w/options: ' + callArgs.options || 'none');
+                return cordova.raw.prepare(callArgs);
+            });
+        });
+        
+        return promise;
+    });
 }
 
 // Main build method
@@ -245,6 +292,7 @@ function _createIpa(projectPath, args) {
 module.exports = {
     configure: configure,
     setupCordova: setupCordova,
+    prepareProject: prepareProject,
     buildProject: buildProject,
     packageProject: packageProject,
     getInstalledPlatformVersion: utilities.getInstalledPlatformVersion,
