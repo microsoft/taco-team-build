@@ -50,15 +50,16 @@ Allows you to programmatically configure the Cordova version to use, the locatio
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 var build = require('taco-team-build');
 build.configure({
-    cordovaCache: "D:\\path\\to\\cache",
-    cordovaVersion: "4.3.1",
+    nodePackageName: "cordova-cli",
+    moduleCache: "D:\\path\\to\\cache",
+    moduleVersion: "4.3.1",
     projectPath: "myproject"
 }).done();
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
--   **cordovaCache** defaults to either the **CORDOVA\_CACHE** environment variable or %APPDATA%\taco_home on Windows and ~/.taco_home on OSX if no value is set for the variable. This will also automatically set CORDOVA\_HOME and PLUGMAN\_HOME to sub-folders in this same location to avoid conflicting with any global instllations you may have.
+-   **moduleCache** defaults to either the **CORDOVA\_CACHE** environment variable or %APPDATA%\taco_home on Windows and ~/.taco_home on OSX if no value is set for the variable. This will also automatically set CORDOVA\_HOME and PLUGMAN\_HOME to sub-folders in this same location to avoid conflicting with any global instllations you may have.
 -   **projectPath** defaults to the current working directory.
--   If the **cordovaVersion** is not set, the version will be pulled from **taco.json** if present and otherwise default to 5.1.1.  You can manually create a taco.json file if you are not using Visual Studio by including the following in the file:
+-   If the **moduleVersion** is not set, the version will be pulled from **taco.json** if present and otherwise default to latest.  You can manually create a taco.json file if you are not using Visual Studio by including the following in the file:
 
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     {
@@ -139,6 +140,54 @@ For iOS you may need to unlock the keychain to build your app depending on your 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 security unlock-keychain -p ${KEYCHAIN_PWD} ${HOME}/Library/Keychains/login.keychain 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+### getInstalledPlatformVersion(projectPath, platform)
+Returns the version of the platform that is installed to the project.
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+var build = require('taco-team-build'),
+    platform = "android";
+
+build.getInstalledPlatformVersion("./",platform))
+    .then(function(version) { return version; })
+    .done();
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+### getVersionForNpmPackage(pkgName)
+Returns the latest version of pkgName available on NPM.
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+var build = require('taco-team-build');
+
+build.getVersionForNpmPackage("taco-team-build"))
+    .then(function(version) { return version; })
+    .done();
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+### getNpmVersionFromConfig(config)
+Returns the version of NPM specified in the config.
+
+### cacheModule(config)
+Caches the NPM module specified by the config.
+Config specifies both the name of the package and the expected version. Empty version assumes latest.
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+var build = require('taco-team-build'),
+    config = {
+        nodePackageName: "cordova-cli",
+        moduleCache: "D:\\path\\to\\cache",
+        moduleVersion: "4.3.1",
+        projectPath: "myproject"
+    };
+
+build.cacheModule(config)
+    .then(function(version) { return version; })
+    .done();
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+-   **projectPath** is assumed to be the current working directory if not specified.
+-   **moduleVersion** is assumed to be latest if not specified.
+-   **moduleCache** defaults to either the **CORDOVA\_CACHE** environment variable or %APPDATA%\taco_home on Windows and ~/.taco_home on OSX if no value is set for the variable. This will also automatically set CORDOVA\_HOME and PLUGMAN\_HOME to sub-folders in this same location to avoid conflicting with any global instllations you may have.
 
 ## Terms of Use
 By downloading and running this project, you agree to the license terms of the third party application software, Microsoft products, and components to be installed. 
