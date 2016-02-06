@@ -136,7 +136,8 @@ function prepareProject(cordovaPlatforms, args, /* optional */ projectPath) {
             promise = promise.then(function () {
                 // Build app with platform specific args if specified
                 var callArgs = utilities.getCallArgs(platform, args);
-                console.log('Queueing prepare for platform ' + platform + ' w/options: ' + callArgs.options || 'none');
+                var argsString = _getArgsString(callArgs.options);
+                console.log('Queueing prepare for platform ' + platform + ' w/options: ' +argsString);
                 return cordova.raw.prepare(callArgs);
             });
         });
@@ -191,7 +192,7 @@ function buildProject(cordovaPlatforms, args, /* optional */ projectPath) {
             promise = promise.then(function () {
                 // Build app with platform specific args if specified
                 var callArgs = utilities.getCallArgs(platform, args, cordovaVersion);
-                var argsString = _getArgsString(args.options);
+                var argsString = _getArgsString(callArgs.options);
                 console.log('Queueing build for platform ' + platform + ' w/options: ' + argsString);
                 return cordova.raw.build(callArgs);
             });
