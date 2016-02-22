@@ -6,14 +6,16 @@ taco-team-build is a node module designed to avoid common pitfalls when building
 
 Specifically it helps with the following challenges:
 
-1.  Handling multiple versions of Cordova from the same build server in a performant way on Windows
+1.  Handling multiple versions of Cordova from the same build server in a performant way on Windows, Linux, or a Mac.
 2.  Allowing developers to specify a location to store versions of Cordova, its plugins, and platforms outside of a user's home directory (useful in CI environments where a system user may run the build) 
-3.  Generating an ipa for iOS when using versions of Cordova that do not automatically generate one
-4.  Automated detection of whether a platform should be added avoid a non-zero exit code for incremental builds (the default CLI behavior)
-5.  Removing plugins/android.json, plugins/ios.json, plugins/windows.json, or plugins/wp8.json files [which can cause strange results if present](http://go.microsoft.com/fwlink/?LinkID=691927) when adding a platform. (Though files are not removed if the Cordova platforms folder was added to source control.)
-6.  Fixes for problems with symlinks and execute bits being lost when a plugin or platform is added to source control from Windows (via a plugin)
-7.  Adds in support for the res/native folder that will overlay the contents of the platforms folder so you can add files to the native project without checking native code into source control (via a plugin) - Ex: res/native/Android/AndroidManifest.xml will overwrite the default one before Cordova's "prepare" step.
-8.  Some Windows packaging features and bug fixes (via a plugin) designed for use with versions of Cordova that pre-date the Windows platform's support of build.json
+3.  Automated detection of whether a platform should be added avoid a non-zero exit code for incremental builds (the default CLI behavior)
+5.  Fixes for problems where execute bits are lost in the hooks or platforms folder when added to control from Windows.
+8.  Generating an ipa for iOS when using versions of Cordova that do not automatically generate one.
+6.  Via [cordova-plugin-vs-taco-support](https://github.com/Microsoft/cordova-plugin-vs-taco-support):
+    1.  Removing plugins/android.json, plugins/ios.json, plugins/windows.json, or plugins/wp8.json files [which can cause strange results if present](http://go.microsoft.com/fwlink/?LinkID=691927) when adding a platform. (Though files are not removed if the Cordova platforms folder was added to source control.)
+    2. Fixes for problems with symlinks are lost when a plugin is added to source control from Windows.
+    3.  Adds in support for the res/native folder that will overlay the contents of the platforms folder so you can add files to the native project without checking native code into source control (via a plugin) - Ex: res/native/Android/AndroidManifest.xml will overwrite the default one before Cordova's "prepare" step.
+    4.  Some Windows packaging features and bug fixes (via a plugin) designed for use with versions of Cordova that pre-date the Windows platform's support of build.json
 
 It is a generic node module so it can be used with any number of build systems including Gulp, Grunt, and Jake.
 
@@ -52,7 +54,7 @@ var build = require('taco-team-build');
 build.configure({
     nodePackageName: "cordova-cli",
     moduleCache: "D:\\path\\to\\cache",
-    moduleVersion: "4.3.1",
+    moduleVersion: "6.0.0",
     projectPath: "myproject"
 }).done();
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -63,7 +65,7 @@ build.configure({
 
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     {
-        "cordova-cli": "4.3.1"
+        "cordova-cli": "6.0.0"
     }
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -102,16 +104,27 @@ The method automatically calls setupCordova() if it has not yet been called.
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 var build = require('taco-team-build'),
     platforms = ["android", "windows"],
-    args = { android: ["--release", "--ant"], windows: ["--release"] };
+    args = { android: ["--release", "--device", "--gradleArg=--no-daemon"], windows: ["--release"] };
             
 build.buildProject(platforms, args).done();
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-**WARNING**: Unlike the Cordova CLI, you should not use the "double-double dash" when referencing platform specific arguments. Ex: Use "--ant" not "-- --ant" for Android.
+**WARNING**: Unlike the Cordova CLI, you should not use the "double-double dash" when referencing platform specific arguments. Ex: Use "--gradleArg" not "-- --gradleArg" for Android.
 
 Not only will your flag not be picked up but older versions of the Cordova Android platform will error out if you specify unrecognized flags with a "TypeError: Cannot call method 'prepEnv' of undefined" error.  (This particular error is fixed Cordova 4.3.0 but your flags will still be ignored.)
 
+Note that for iOS you can also add a custom **[build-debug.xcconfig](https://github.com/apache/cordova-ios/blob/master/bin/templates/scripts/cordova/build-debug.xcconfig)** or **[build-release.xcconfig](https://github.com/apache/cordova-ios/blob/master/bin/templates/scripts/cordova/build-release.xcconfig)** file in the **res/native/ios/cordova** folder in your project to set these and other iOS [build settings](https://developer.apple.com/library/ios/documentation/DeveloperTools/Reference/XcodeBuildSettingRef/0-Introduction/introduction.html#//apple_ref/doc/uid/TP40003931-CH1-SW1). Be sure to grab the version of these files from the branch appropriate for the version of Cordova you are targeting - the "master" branch may not be compatible with your version.
+
+For iOS you may need to unlock the keychain to build your app depending on your build server. You can use some variant of the following shell command to do so: 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+security unlock-keychain -p ${KEYCHAIN_PWD} ${HOME}/Library/Keychains/login.keychain 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+See packageProject for older versions of Cordova that do not automatically generate an ipa.
+
 ### packageProject(platforms, args)
+**[DEPRECATED] - This method does nothing if the version of Cordova being used already generates an ipa.**
+
 Supported platforms: ios
 
 Runs any post-build packaging steps required for the specified platforms. The method returns a promise that is fulfilled once packaging is completed. Passed in **platforms** can be an array of platforms or a single platform string. Passed in **args** can be an array of arguments or an object with an array of arguments per platform name.
@@ -132,13 +145,6 @@ iOS Arguments:
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 build.packageProject("ios", ["--sign=/path/to/signing.p12" ", "--embed=/path/to/some.mobileprovision"]); 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-You can also add a custom **[build-debug.xcconfig](https://github.com/apache/cordova-ios/blob/master/bin/templates/scripts/cordova/build-debug.xcconfig)** or **[build-release.xcconfig](https://github.com/apache/cordova-ios/blob/master/bin/templates/scripts/cordova/build-release.xcconfig)** file in the **res/native/ios/cordova** folder in your project to set these and other iOS [build settings](https://developer.apple.com/library/ios/documentation/DeveloperTools/Reference/XcodeBuildSettingRef/0-Introduction/introduction.html#//apple_ref/doc/uid/TP40003931-CH1-SW1). Be sure to grab the version of these files from the branch appropriate for the version of Cordova you are targeting - the "master" branch may not be compatible with your version.
-
-For iOS you may need to unlock the keychain to build your app depending on your build server. You can use some variant of the following shell command to do so: 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-security unlock-keychain -p ${KEYCHAIN_PWD} ${HOME}/Library/Keychains/login.keychain 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 ### getInstalledPlatformVersion(projectPath, platform)
@@ -174,9 +180,9 @@ Config specifies both the name of the package and the expected version. Empty ve
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 var build = require('taco-team-build'),
     config = {
-        nodePackageName: "cordova-cli",
+        nodePackageName: "cordova",
         moduleCache: "D:\\path\\to\\cache",
-        moduleVersion: "4.3.1",
+        moduleVersion: "6.0.0",
         projectPath: "myproject"
     };
 
