@@ -81,7 +81,7 @@ gulp.task("build-ios", ["scripts", "sass"], function() {
             // ** NOTE: Package not required in recent versions of Cordova
             return cordovaBuild.packageProject(platformsToBuild)
                 .then(function() {             
-                    return gulp.src(paths.ipa).pipe(gulp.dest(paths.ipaBin));
+                    return gulp.src(paths.ipa).pipe(gulp.dest(paths.binIpa));
                 });
         });
 });
@@ -90,7 +90,7 @@ gulp.task("build-ios", ["scripts", "sass"], function() {
 gulp.task("build-win", ["scripts", "sass"], function() {
     return cordovaBuild.buildProject("windows", buildArgs)
         .then(function() {
-            return gulp.src(paths.appx).pipe(gulp.dest(paths.appxBin));            
+            return gulp.src(paths.appx).pipe(gulp.dest(paths.binAppx));            
         });
 });
 
