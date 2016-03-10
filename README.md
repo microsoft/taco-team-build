@@ -56,7 +56,7 @@ build.configure({
     moduleCache: "D:\\path\\to\\cache",
     moduleVersion: "6.0.0",
     projectPath: "myproject"
-}).done();
+});
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 -   **moduleCache** defaults to either the **CORDOVA\_CACHE** environment variable or %APPDATA%\taco_home on Windows and ~/.taco_home on OSX if no value is set for the variable. This will also automatically set CORDOVA\_HOME and PLUGMAN\_HOME to sub-folders in this same location to avoid conflicting with any global instllations you may have.
