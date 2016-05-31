@@ -309,6 +309,7 @@ module.exports = {
     getVersionForNpmPackage: utilities.getVersionForNpmPackage,
     getNpmVersionFromConfig: getNpmVersionFromConfig,
     cacheModule: function (config) {
+        process.env["CI"]=true;
         config = utilities.parseConfig(config, defaultConfig);
         return cache.cacheModule(config);
     }
