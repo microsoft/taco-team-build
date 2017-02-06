@@ -109,6 +109,61 @@ function applyExecutionBitFix(platforms) {
     return exec(script);
 }
 
+function getXcodeVersion() {
+    var cmd = 'xcodebuild -version';
+    exec(cmd, function (err, stdout, stderr) {
+        if (err) {
+            console.log(err);
+        } else {
+            var versionLine = stdout.toString().split('\n')[0];
+            // first line will be in formart XCode VERSION_NUMBER
+            var version = versionLine.split(' ')[1];
+            return version;
+        }
+    });
+}
+
+function ensureProjectXcode8Compatibility(projectPath, platform) {
+    // if platform is not ios, skip
+    if (platform !== 'ios') { return; }
+    // check xcode version
+    // prior to xcode 8, do nothing
+    var xcodeVersion = getXcodeVersion();
+    if (semver.lt(xcodeVersion, '8.0.0')) { return; }
+    // check cordova ios version
+    var cordovaIosVersionPath = path.join(projectPath, 'platforms/ios/cordova/version');
+    if (!fs.existsSync(cordovaIosVersionPath)) {
+        console.error('Cannot find version file inside Cordova iOS folder/ Check your environment.');
+        process.exit(1);
+    } else {
+        var v = require(cordovaIosVersionPath);
+        if (semver.lt(v.version, '4.3.0')) {
+            console.warn('Xcode8 requires cordova-ios 4.3.0 or above. Please update.');
+            process.exit(1);
+        }
+        // check build.json
+        var buildJsonPath = path.join(projectPath, 'build.json');
+        if (!fs.existsSync(buildJsonPath)) {
+            console.error('Please specify a build.json file according to https://taco.visualstudio.com/en-us/docs/vs-taco-2017-ios-guide/#xcode8');
+            process.exit(1);
+        } else {
+            // check developteam in build.json
+            var obj;
+            fs.readFile(buildJsonPath, 'utf8', function (err, data) {
+                if (err) { throw err; }
+                obj = JSON.parse(data);
+                var debug = obj['ios']['debug']['developmentTeam'];
+                var release = obj['ios']['release']['developmentTeam'];
+                if (typeof debug === 'undefined' || typeof release === 'undefined') {
+                    console.error('Please specify developmentTeam in build.json according to https://taco.visualstudio.com/en-us/docs/vs-taco-2017-ios-guide/#xcode8');
+                    process.exit(1);
+                }
+            }
+        }
+    }
+
+}
+
 // Method to prepare the platforms
 function prepareProject(cordovaPlatforms, args, /* optional */ projectPath) {
     if (typeof (cordovaPlatforms) == "string") {
@@ -143,6 +198,7 @@ function prepareProject(cordovaPlatforms, args, /* optional */ projectPath) {
         //Build each platform with args in args object
         cordovaPlatforms.forEach(function (platform) {
             promise = promise.then(function () {
+                ensureProjectXcode8Compatibility(projectPath, platform);
                 // Build app with platform specific args if specified
                 var callArgs = utilities.getCallArgs(platform, args);
                 var argsString = _getArgsString(callArgs.options);
