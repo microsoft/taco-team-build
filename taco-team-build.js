@@ -109,59 +109,69 @@ function applyExecutionBitFix(platforms) {
     return exec(script);
 }
 
-function getXcodeVersion() {
+function checkIfXcodeAboveVersion8() {
     var cmd = 'xcodebuild -version';
-    exec(cmd, function (err, stdout, stderr) {
+    var execDeferred = Q.defer();
+    exec(cmd, function(err, stdout, stderr) {
         if (err) {
-            console.log(err);
+            execDeferred.reject(err);
         } else {
-            var versionLine = stdout.toString().split('\n')[0];
-            // first line will be in formart XCode VERSION_NUMBER
-            var version = versionLine.split(' ')[1];
-            return version;
+            execDeferred.resolve(stdout.toString());
+        }
+    });
+
+    return execDeferred.promise.then(function(execOutput) {
+        // parse the output here
+        var xcodeVersionRegex = /^Xcode (\d+(\.\d+)?)/;
+        var match = execOutput.match(xcodeVersionRegex);
+        if (match && match[1]) {
+            if (parseInt(match[1], 10) >= 8) {
+                return Q(true);
+            } else {
+                return Q(false);
+            }
         }
     });
 }
 
-function ensureProjectXcode8Compatibility(projectPath, platform) {
+function ensureProjectXcode8Compatibility(projectPath, platform, callArgs) {
     // if platform is not ios, skip
-    if (platform !== 'ios') { return; }
-    // check xcode version
-    // prior to xcode 8, do nothing
-    var xcodeVersion = getXcodeVersion();
-    if (semver.lt(xcodeVersion, '8.0.0')) { return; }
-    // check cordova ios version
-    var cordovaIosVersionPath = path.join(projectPath, 'platforms/ios/cordova/version');
-    if (!fs.existsSync(cordovaIosVersionPath)) {
-        console.error('Cannot find version file inside Cordova iOS folder/ Check your environment.');
-        process.exit(1);
-    } else {
-        var v = require(cordovaIosVersionPath);
-        if (semver.lt(v.version, '4.3.0')) {
-            console.warn('Xcode8 requires cordova-ios 4.3.0 or above. Please update.');
-            process.exit(1);
-        }
-        // check build.json
-        var buildJsonPath = path.join(projectPath, 'build.json');
-        if (!fs.existsSync(buildJsonPath)) {
-            console.error('Please specify a build.json file according to https://taco.visualstudio.com/en-us/docs/vs-taco-2017-ios-guide/#xcode8');
-            process.exit(1);
-        } else {
-            // check developteam in build.json
-            var obj;
-            fs.readFile(buildJsonPath, 'utf8', function (err, data) {
-                if (err) { throw err; }
-                obj = JSON.parse(data);
-                var debug = obj['ios']['debug']['developmentTeam'];
-                var release = obj['ios']['release']['developmentTeam'];
-                if (typeof debug === 'undefined' || typeof release === 'undefined') {
+    if (platform !== 'ios') { return Q(); }
+    return checkIfXcodeAboveVersion8().then(function(shouldCheck) {
+        if (shouldCheck == true) {
+            // check cordova ios version
+            var cordovaIosVersionPath = path.join(projectPath, 'platforms/ios/cordova/version');
+            if (!fs.existsSync(cordovaIosVersionPath)) {
+                console.error('Cannot find version file inside Cordova iOS folder/ Check your environment.');
+                process.exit(1);
+            } else {
+                var v = require(cordovaIosVersionPath);
+                if (semver.lt(v.version, '4.3.0')) {
+                    console.error('Your cordova-ios version is ' + v.version + '. Xcode8 requires cordova-ios 4.3.0 or above. Please update.');
+                    process.exit(1);
+                }
+                // check build.json
+                var buildJsonPath = path.join(projectPath, 'build.json');
+                var buildJson;
+                try {
+                    buildJson = require(buildJsonPath);
+                }
+                catch (e) {
+                    console.error('Please specify a build.json file according to https://taco.visualstudio.com/en-us/docs/vs-taco-2017-ios-guide/#xcode8');
+                    process.exit(1);
+                }
+
+                var argsString = _getArgsString(callArgs.options).toString().toLowerCase();
+                var config = (argsString.indexOf('debug') > -1) ? 'debug' : 'release';
+                if (!buildJson.ios || !buildJson.ios[config] || !buildJson.ios[config].developmentTeam) {
                     console.error('Please specify developmentTeam in build.json according to https://taco.visualstudio.com/en-us/docs/vs-taco-2017-ios-guide/#xcode8');
                     process.exit(1);
                 }
+                                
+                return Q();
             }
         }
-    }
-
+    });
 }
 
 // Method to prepare the platforms
@@ -198,7 +208,6 @@ function prepareProject(cordovaPlatforms, args, /* optional */ projectPath) {
         //Build each platform with args in args object
         cordovaPlatforms.forEach(function (platform) {
             promise = promise.then(function () {
-                ensureProjectXcode8Compatibility(projectPath, platform);
                 // Build app with platform specific args if specified
                 var callArgs = utilities.getCallArgs(platform, args);
                 var argsString = _getArgsString(callArgs.options);
@@ -256,6 +265,9 @@ function buildProject(cordovaPlatforms, args, /* optional */ projectPath) {
         cordovaPlatforms.forEach(function (platform) {
             promise = promise.then(function () {
                 // Build app with platform specific args if specified
+                var callArgs = utilities.getCallArgs(platform, args, cordovaVersion);
+                ensureProjectXcode8Compatibility(projectPath, platform, callArgs);
+            }).then(function() {
                 var callArgs = utilities.getCallArgs(platform, args, cordovaVersion);
                 var argsString = _getArgsString(callArgs.options);
                 console.log('Queueing build for platform ' + platform + ' w/options: ' + argsString);
