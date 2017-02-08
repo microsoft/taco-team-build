@@ -140,36 +140,38 @@ function ensureProjectXcode8Compatibility(projectPath, platform, callArgs) {
     return checkIfXcodeAboveVersion8().then(function(shouldCheck) {
         if (shouldCheck == true) {
             // check cordova ios version
-            var cordovaIosVersionPath = path.join(projectPath, 'platforms/ios/cordova/version');
-            if (!fs.existsSync(cordovaIosVersionPath)) {
-                console.error('Cannot find version file inside Cordova iOS folder/ Check your environment.');
-                process.exit(1);
-            } else {
-                var v = require(cordovaIosVersionPath);
-                if (semver.lt(v.version, '4.3.0')) {
-                    console.error('Your cordova-ios version is ' + v.version + '. Xcode8 requires cordova-ios 4.3.0 or above. Please update.');
-                    process.exit(1);
-                }
-                // check build.json
-                var buildJsonPath = path.join(projectPath, 'build.json');
-                var buildJson;
-                try {
-                    buildJson = require(buildJsonPath);
-                }
-                catch (e) {
-                    console.error('Please specify a build.json file according to https://taco.visualstudio.com/en-us/docs/vs-taco-2017-ios-guide/#xcode8');
-                    process.exit(1);
-                }
-
-                var argsString = _getArgsString(callArgs.options).toString().toLowerCase();
-                var config = (argsString.indexOf('debug') > -1) ? 'debug' : 'release';
-                if (!buildJson.ios || !buildJson.ios[config] || !buildJson.ios[config].developmentTeam) {
-                    console.error('Please specify developmentTeam in build.json according to https://taco.visualstudio.com/en-us/docs/vs-taco-2017-ios-guide/#xcode8');
-                    process.exit(1);
-                }
-                                
-                return Q();
+            var cordovaIosVersionPath = path.join(projectPath, 'platforms', 'ios', 'cordova', 'version');
+            var cordovaIosVersion;
+            try {
+                cordovaIosVersion = require(cordovaIosVersionPath);
             }
+            catch (e) {
+                throw new Error('Cannot determine cordova-ios version.');
+            }
+
+            if (cordovaIosVersion && semver.lt(cordovaIosVersion.version, '4.3.0')) {
+                throw new Error('Your cordova-ios version is ' + v.version + '. Xcode8 requires cordova-ios 4.3.0 or above. Please update.');
+            }
+
+            // check build.json existence
+            var buildJsonPath = path.join(projectPath, 'build.json');
+            var buildJson;
+            try {
+                buildJson = require(buildJsonPath);
+            }
+            catch (e) {
+                throw new Error('Please specify a build.json file according to https://taco.visualstudio.com/en-us/docs/vs-taco-2017-ios-guide/#xcode8');
+            }
+
+            // check developmentTeam existence
+            var argsString = _getArgsString(callArgs.options).toString().toLowerCase();
+            // find out configuration
+            var config = (argsString.indexOf('debug') > -1) ? 'debug' : 'release';
+            if (!buildJson.ios || !buildJson.ios[config] || !buildJson.ios[config].developmentTeam) {
+                throw new Error('Please specify developmentTeam in build.json according to https://taco.visualstudio.com/en-us/docs/vs-taco-2017-ios-guide/#xcode8');
+            }
+
+            return Q();
         }
     });
 }
@@ -266,7 +268,7 @@ function buildProject(cordovaPlatforms, args, /* optional */ projectPath) {
             promise = promise.then(function () {
                 // Build app with platform specific args if specified
                 var callArgs = utilities.getCallArgs(platform, args, cordovaVersion);
-                ensureProjectXcode8Compatibility(projectPath, platform, callArgs);
+                return ensureProjectXcode8Compatibility(projectPath, platform, callArgs);
             }).then(function() {
                 var callArgs = utilities.getCallArgs(platform, args, cordovaVersion);
                 var argsString = _getArgsString(callArgs.options);
