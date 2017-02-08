@@ -150,7 +150,7 @@ function ensureProjectXcode8Compatibility(projectPath, platform, callArgs) {
             }
 
             if (cordovaIosVersion && semver.lt(cordovaIosVersion.version, '4.3.0')) {
-                throw new Error('Your cordova-ios version is ' + v.version + '. Xcode8 requires cordova-ios 4.3.0 or above. Please update.');
+                throw new Error('Your cordova-ios version is ' + cordovaIosVersion.version + '. Xcode8 requires cordova-ios 4.3.0 or above. Please update.');
             }
 
             // check build.json existence
