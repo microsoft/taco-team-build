@@ -214,7 +214,7 @@ function prepareProject(cordovaPlatforms, args, /* optional */ projectPath) {
                 var callArgs = utilities.getCallArgs(platform, args);
                 var argsString = _getArgsString(callArgs.options);
                 console.log('Queueing prepare for platform ' + platform + ' w/options: ' + argsString);
-                return cordova.raw.prepare(callArgs);
+                return cordova.prepare(callArgs);
             });
         });
 
@@ -273,7 +273,7 @@ function buildProject(cordovaPlatforms, args, /* optional */ projectPath) {
                 var callArgs = utilities.getCallArgs(platform, args, cordovaVersion);
                 var argsString = _getArgsString(callArgs.options);
                 console.log('Queueing build for platform ' + platform + ' w/options: ' + argsString);
-                return cordova.raw.build(callArgs);
+                return cordova.build(callArgs);
             });
         });
 
@@ -294,7 +294,7 @@ function _addPlatformsToProject(cordovaPlatforms, projectPath, cordova) {
     var promise = Q();
     cordovaPlatforms.forEach(function (platform) {
         if (!utilities.fileExistsSync(path.join(projectPath, 'platforms', platform))) {
-            promise = promise.then(function () { return cordova.raw.platform('add', platform); });
+            promise = promise.then(function () { return cordova.platform('add', platform); });
         } else {
             console.log('Platform ' + platform + ' already added.');
         }
