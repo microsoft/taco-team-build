@@ -293,6 +293,7 @@ function _getArgsString(options) {
 function _addPlatformsToProject(cordovaPlatforms, projectPath, cordova) {
     var promise = Q();
     cordovaPlatforms.forEach(function (platform) {
+        console.log('this is a test')
         if (!utilities.fileExistsSync(path.join(projectPath, 'platforms', platform))) {
             promise = promise.then(function () { return cordova.platform('add', platform); });
         } else {
