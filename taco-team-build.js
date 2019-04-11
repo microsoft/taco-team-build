@@ -297,7 +297,7 @@ function _addPlatformsToProject(cordovaPlatforms, projectPath, cordova) {
         if (!utilities.fileExistsSync(path.join(projectPath, 'platforms', platform))) {
             promise = promise.then(function () { return cordova.platform('add', platform); });
         } else {
-            console.log('Platform ' + platform + ' already added.');
+            console.log(' --- Platform ' + platform + ' already added.');
         }
     });
 

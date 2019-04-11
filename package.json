@@ -9,10 +9,10 @@
   "main": "taco-team-build.js",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Microsoft/taco-team-build.git"
+    "url": "https://github.com/ruandeveloper/taco-team-build.git.git"
    },
   "bugs": {
-    "url": "https://github.com/Microsoft/taco-team-build/issues"
+    "url": "https://github.com/ruandeveloper/taco-team-build.git/issues"
   },
   "license": "MIT",
   "bin": {
